@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: carematch
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    autoDeploy: true
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: BASE_URL
+        value: https://carematch.onrender.com
+      - key: DATABASE
+        value: /var/data/carematch.db
+    disk:
+      name: carematch-data
+      mountPath: /var/data
+      sizeGB: 1
