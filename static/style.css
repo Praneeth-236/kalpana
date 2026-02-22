@@ -4,38 +4,49 @@
 
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f7fb;
-    color: #1f2937;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+    color: #111827;
+    line-height: 1.5;
 }
 
 .container {
-    max-width: 960px;
+    max-width: 1040px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 28px 20px 40px;
 }
 
 h1 {
-    margin-bottom: 6px;
+    margin: 0 0 8px;
+    font-size: clamp(28px, 3vw, 36px);
+    letter-spacing: -0.02em;
+    color: #0f172a;
+}
+
+h2 {
+    margin: 0 0 10px;
+    color: #1e293b;
 }
 
 .subtitle {
-    color: #4b5563;
-    margin-bottom: 20px;
+    color: #475569;
+    margin: 0 0 18px;
 }
 
 .card {
     background: #ffffff;
-    border: 1px solid #dbe3ee;
-    border-radius: 10px;
-    padding: 16px;
+    border: 1px solid #d9e3f0;
+    border-radius: 14px;
+    padding: 18px;
     margin-bottom: 16px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 label {
     display: block;
-    margin-top: 10px;
+    margin-top: 12px;
     font-weight: 600;
+    color: #1f2937;
 }
 
 input,
@@ -43,10 +54,19 @@ textarea,
 button {
     width: 100%;
     margin-top: 6px;
-    padding: 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
+    padding: 11px 12px;
+    border: 1px solid #c7d5e6;
+    border-radius: 10px;
     font-size: 14px;
+    background: #fff;
+    color: #0f172a;
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 
 .btn {
@@ -54,43 +74,57 @@ button {
     width: auto;
     text-decoration: none;
     border: none;
-    background: #2563eb;
+    background: linear-gradient(180deg, #2f6df6 0%, #1f5fe3 100%);
     color: #ffffff;
-    padding: 10px 14px;
-    border-radius: 8px;
+    padding: 10px 15px;
+    border-radius: 10px;
     cursor: pointer;
     margin-right: 8px;
     margin-top: 8px;
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
 .btn:hover {
-    background: #1d4ed8;
+    filter: brightness(1.04);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
 }
 
 .actions {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .dashboard-actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
+    gap: 12px;
+    margin: 18px 0;
 }
 
 .action-btn {
-    background-color: #2563eb;
-    color: white;
+    background: linear-gradient(180deg, #2f6df6 0%, #1f5fe3 100%);
+    color: #fff;
     padding: 12px;
     border-radius: 10px;
     text-align: center;
     text-decoration: none;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.action-btn:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
 }
 
 .metric {
-    font-size: 30px;
+    font-size: clamp(28px, 4vw, 36px);
     font-weight: bold;
-    margin: 8px 0;
+    margin: 4px 0 8px;
+    color: #0f172a;
 }
 
 .grid-2 {
@@ -101,10 +135,12 @@ button {
 
 .explanation {
     white-space: pre-wrap;
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
-    border-radius: 8px;
-    padding: 10px;
+    background: #f8fbff;
+    border: 1px dashed #c9d8ea;
+    border-radius: 10px;
+    padding: 12px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 14px;
 }
 
 .ok {
@@ -122,8 +158,26 @@ button {
     font-weight: 700;
 }
 
+hr {
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin: 12px 0;
+}
+
 @media (max-width: 768px) {
+    .container {
+        padding: 20px 14px 28px;
+    }
+
+    .card {
+        padding: 14px;
+    }
+
     .grid-2 {
         grid-template-columns: 1fr;
+    }
+
+    .btn {
+        margin-right: 6px;
     }
 }

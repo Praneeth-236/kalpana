@@ -20,9 +20,10 @@ from explanation_engine import (
     generate_doctor_recommendation_explanation,
     generate_hospital_explanation,
 )
-from geolocation_service import fetch_nearest_hospitals_overpass, geocode_location
+from geolocation_service import geocode_location
 from health_monitor import compute_health_stability
 from health_summary_engine import generate_patient_summary
+from hospital_service import fetch_nearest_hospitals_overpass
 from models import (
     add_doctor_prescription,
     approve_doctor_patient_link,
@@ -131,8 +132,10 @@ def _rank_for_user(user, user_lat=None, user_lon=None):
     hospitals = []
     doctors_by_hospital = {}
     hospital_coords_by_id = {}
+    overpass_used = False
 
     if use_overpass:
+        overpass_used = True
         hospitals = fetch_nearest_hospitals_overpass(
             user_lat,
             user_lon,
@@ -145,12 +148,7 @@ def _rank_for_user(user, user_lat=None, user_lon=None):
             )
 
     if not hospitals:
-        hospitals = list_hospitals()
-        doctors_by_hospital = {h["id"]: get_doctors_by_hospital(h["id"]) for h in hospitals}
-        for hospital in hospitals:
-            coords = geocode_location(hospital["location"])
-            if coords:
-                hospital_coords_by_id[hospital["id"]] = coords
+        return [], overpass_used
 
     ranked = rank_hospitals_with_location(
         user,
@@ -162,7 +160,7 @@ def _rank_for_user(user, user_lat=None, user_lon=None):
     )
     for item in ranked:
         item["explanation"] = generate_hospital_explanation(item)
-    return ranked
+    return ranked, overpass_used
 
 
 @app.route("/")
@@ -248,7 +246,7 @@ def hospitals_page():
     user_lat = _to_float_or_none(request.args.get("lat"))
     user_lon = _to_float_or_none(request.args.get("lon"))
 
-    ranked_hospitals = _rank_for_user(user, user_lat=user_lat, user_lon=user_lon)
+    ranked_hospitals, overpass_used = _rank_for_user(user, user_lat=user_lat, user_lon=user_lon)
     best_hospital = ranked_hospitals[0] if ranked_hospitals else None
     new_patient_id_notice = session.pop("new_patient_id_notice", None)
     return render_template(
@@ -259,6 +257,7 @@ def hospitals_page():
         user_lat=user_lat,
         user_lon=user_lon,
         new_patient_id_notice=new_patient_id_notice,
+        overpass_used=overpass_used,
     )
 
 
@@ -532,7 +531,7 @@ def patient_dashboard():
             adherence_score=adherence["ratio"],
         )
 
-    ranked_hospitals = _rank_for_user(user)
+    ranked_hospitals, _ = _rank_for_user(user)
     top_recommendation = ranked_hospitals[0] if ranked_hospitals else None
     adaptive_state = get_patient_state(user["id"])
     patient_health_summary = generate_patient_summary(user["id"])

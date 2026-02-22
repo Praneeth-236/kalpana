@@ -48,8 +48,19 @@
             <pre class="explanation">{{ best_hospital['explanation'] }}</pre>
             {% else %}
             <p>No hospital recommendation available.</p>
+            {% if overpass_used %}
+            <p><strong>Realtime status:</strong> Overpass API did not return hospitals for this request.</p>
+            {% endif %}
             {% endif %}
         </div>
+
+        {% if ranked_hospitals|length == 0 and overpass_used %}
+        <div class="card">
+            <h2>Realtime Fetch Notice</h2>
+            <p>Hospitals are fetched from Overpass API in realtime. No records were returned right now.</p>
+            <p>Please retry in a few seconds or adjust location permissions.</p>
+        </div>
+        {% endif %}
 
         {% for hospital in ranked_hospitals %}
         <div class="card">

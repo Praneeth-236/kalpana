@@ -8,9 +8,14 @@ def _calculate_distance_score(user_lat, user_lon, hospital_lat, hospital_lon):
     return distance_score_from_km(distance_km)
 
 
-def _calculate_specialty_match_score(user_condition, hospital_specialization):
-    if str(user_condition).strip().lower() == str(hospital_specialization).strip().lower():
+def _calculate_specialty_match_score(user_condition, hospital_specialties):
+    normalized_condition = str(user_condition).strip().lower()
+    normalized_specialties = str(hospital_specialties).strip().lower()
+
+    if normalized_condition == normalized_specialties:
         return 1.0
+    if normalized_specialties == "general":
+        return 0.65
     return 0.4
 
 
@@ -46,9 +51,8 @@ def calculate_hospital_score(
     distance_km = None
     if None not in (user_lat, user_lon, hospital_lat, hospital_lon):
         distance_km = haversine_distance_km(user_lat, user_lon, hospital_lat, hospital_lon)
-    specialty_match_score = _calculate_specialty_match_score(
-        user["condition"], hospital["specialization"]
-    )
+    hospital_specialties = hospital.get("specialties") or hospital.get("specialization") or "general"
+    specialty_match_score = _calculate_specialty_match_score(user["condition"], hospital_specialties)
     rating_score = _calculate_rating_score(hospital["rating"])
     emergency_capability_score = _calculate_emergency_capability_score(hospital)
     doctor_availability_score = _calculate_doctor_availability_score(doctors or [])
@@ -64,7 +68,8 @@ def calculate_hospital_score(
         "hospital_id": hospital["id"],
         "hospital_name": hospital["name"],
         "location": hospital["location"],
-        "specialization": hospital["specialization"],
+        "specialization": hospital.get("specialization") or hospital_specialties,
+        "specialties": hospital_specialties,
         "rating": hospital["rating"],
         "avg_cost": hospital["avg_cost"],
         "emergency_capable": int(hospital["emergency_capable"] or 0),
