@@ -28,6 +28,150 @@ body {
     line-height: 1.5;
 }
 
+body.home-login {
+    background: radial-gradient(circle at 15% 20%, #ebe6ff 0%, #f5f8ff 45%, #eef4ff 100%);
+}
+
+.home-wrap {
+    max-width: 1180px;
+}
+
+.auth-showcase {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.phone-card {
+    min-height: 330px;
+    border-radius: 20px;
+    padding: 18px;
+    box-shadow: 0 18px 34px rgba(45, 50, 95, 0.15);
+    border: 1px solid #d8ddf8;
+}
+
+.phone-card h2 {
+    margin: 10px 0 8px;
+    line-height: 1.2;
+}
+
+.phone-card p {
+    margin: 0;
+}
+
+.phone-kicker {
+    display: inline-block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.phone-primary {
+    background: linear-gradient(160deg, #7f63ff 0%, #5c46db 55%, #4b39bf 100%);
+    color: #fff;
+}
+
+.phone-primary .phone-kicker {
+    color: #e7dcff;
+}
+
+.phone-chip {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.phone-services {
+    background: #ffffff;
+}
+
+.service-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.service-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #f7f9ff;
+    border: 1px solid #dfe7fb;
+    border-radius: 12px;
+    min-height: 92px;
+    font-size: 24px;
+}
+
+.service-item span {
+    font-size: 13px;
+    color: #334155;
+    font-weight: 600;
+}
+
+.phone-doctor {
+    background: linear-gradient(180deg, #ffffff 0%, #f7f3ff 100%);
+}
+
+.doctor-mini-card {
+    margin-top: 10px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid #e2d8ff;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.doctor-mini-card strong {
+    color: #2d2a5f;
+}
+
+.doctor-mini-card span {
+    color: #6a5ea5;
+    font-size: 13px;
+}
+
+.mini-rows {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.mini-rows span {
+    display: block;
+    height: 36px;
+    border-radius: 8px;
+    background: #ede7ff;
+    border: 1px solid #d7c9ff;
+}
+
+.auth-panel {
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.auth-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
 .container {
     max-width: 1100px;
     margin: 0 auto;
@@ -288,5 +432,13 @@ hr {
     .hero {
         grid-template-columns: 1fr;
         padding: 16px;
+    }
+
+    .auth-showcase {
+        grid-template-columns: 1fr;
+    }
+
+    .phone-card {
+        min-height: 0;
     }
 }

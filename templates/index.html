@@ -6,27 +6,47 @@
     <title>CareMatch AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
-<body>
-    <div class="container">
-        <section class="hero">
-            <div>
-                <h1 class="hero-title">CareMatch AI</h1>
-                <p class="hero-copy">Smart care guidance for patients and doctors with realtime hospital matching, adaptive risk checks, and emergency-ready profiles.</p>
-                <div class="hero-badges">
-                    <span class="badge">Realtime Hospital Match</span>
-                    <span class="badge">Patient + Doctor Portals</span>
-                    <span class="badge">Emergency QR Access</span>
+<body class="home-login">
+    <div class="container home-wrap">
+        <section class="auth-showcase">
+            <article class="phone-card phone-primary">
+                <p class="phone-kicker">CareMatch App</p>
+                <h2>Find a Medical Service</h2>
+                <p>Instant hospital guidance, prescriptions, and emergency profile access.</p>
+                <span class="phone-chip">Smart Matching</span>
+            </article>
+
+            <article class="phone-card phone-services">
+                <p class="phone-kicker">Services</p>
+                <div class="service-grid">
+                    <div class="service-item">🏥<span>Hospitals</span></div>
+                    <div class="service-item">💊<span>Medicines</span></div>
+                    <div class="service-item">🩺<span>Doctors</span></div>
+                    <div class="service-item">🚑<span>Emergency</span></div>
                 </div>
-            </div>
-            <img class="hero-image" src="{{ url_for('static', filename='images/hero-care.svg') }}" alt="CareMatch platform illustration" />
+            </article>
+
+            <article class="phone-card phone-doctor">
+                <p class="phone-kicker">Doctor Profile</p>
+                <div class="doctor-mini-card">
+                    <strong>Dr. CareMatch</strong>
+                    <span>Internal Medicine</span>
+                </div>
+                <div class="mini-rows">
+                    <span></span><span></span><span></span>
+                    <span></span><span></span><span></span>
+                </div>
+            </article>
         </section>
 
-        <p class="subtitle">Choose your portal</p>
-
-        <div class="card">
-            <a class="btn" href="{{ url_for('patient_login') }}">Patient Portal</a>
-            <a class="btn" href="{{ url_for('doctor_login') }}">Doctor Portal</a>
-        </div>
+        <section class="card auth-panel">
+            <h1>Welcome to CareMatch AI</h1>
+            <p class="subtitle">Choose your login portal to continue</p>
+            <div class="auth-actions">
+                <a class="btn" href="{{ url_for('patient_login') }}">Patient Login</a>
+                <a class="btn" href="{{ url_for('doctor_login') }}">Doctor Login</a>
+            </div>
+        </section>
     </div>
 </body>
 </html>
