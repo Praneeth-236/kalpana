@@ -121,6 +121,11 @@ def _to_float_or_none(value):
 
 
 def _rank_for_user(user, user_lat=None, user_lon=None):
+    if user_lat is None or user_lon is None:
+        user_location_coords = geocode_location(user.get("location"))
+        if user_location_coords:
+            user_lat, user_lon = user_location_coords
+
     use_overpass = user_lat is not None and user_lon is not None
 
     hospitals = []
