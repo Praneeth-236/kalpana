@@ -1,10 +1,7 @@
 import os
 import sqlite3
-from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-DATABASE = os.environ.get("DATABASE", "/var/data/carematch.db")
-DB_PATH = Path(DATABASE)
+DB_PATH = os.environ.get("DB_PATH", "/tmp/carematch.db")
 
 
 def get_connection():
