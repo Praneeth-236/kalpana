@@ -11,12 +11,53 @@
         <h1>CareMatch Dashboard</h1>
         <p class="subtitle">Overview for {{ user['name'] }}</p>
 
-        <div class="actions">
-            <a class="btn" href="{{ url_for('results') }}">Hospitals</a>
-            <a class="btn" href="{{ url_for('medicines') }}">Medicines</a>
-            <a class="btn" href="{{ url_for('health_assessment') }}">Health Assessment</a>
-            <a class="btn" href="{{ url_for('emergency_profile', user_id=user['id']) }}">Emergency Profile</a>
-            <a class="btn" href="{{ url_for('generate_qr_route', user_id=user['id']) }}">Generate QR</a>
+        <div class="dashboard-actions">
+            <a class="action-btn" href="{{ url_for('results') }}">Hospitals</a>
+            <a class="action-btn" href="{{ url_for('medicines') }}">Medicines</a>
+            <a class="action-btn" href="{{ url_for('adaptive_assessment', user_id=user['id']) }}">Adaptive Assessment</a>
+            <a class="action-btn" href="{{ url_for('emergency_profile', user_id=user['id']) }}">Emergency Profile</a>
+            <a class="action-btn" href="{{ url_for('generate_qr_route', user_id=user['id']) }}">Generate QR</a>
+            <a class="action-btn" href="{{ url_for('connect_doctor') }}">Connect Doctor</a>
+            <a class="action-btn" href="{{ url_for('doctor_portal_dashboard') }}">Doctor Portal</a>
+            <a class="action-btn" href="{{ url_for('doctor_register') }}">Doctor Register</a>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>Adaptive Stress Score</h2>
+                <p class="metric">{{ adaptive_state['stress_score'] }}</p>
+            </div>
+            <div class="card">
+                <h2>Adaptive Energy Score</h2>
+                <p class="metric">{{ adaptive_state['energy_score'] }}</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Adaptive Trend and Risk</h2>
+            <p><strong>Trend:</strong> {{ adaptive_state['trend'] | title }}</p>
+            <p><strong>Risk Level:</strong> {{ adaptive_risk['risk'] }}</p>
+            <p><strong>Risk Probability:</strong> {{ adaptive_risk['risk_probability'] if adaptive_risk['risk_probability'] is not none else 'N/A' }}%</p>
+            <p><strong>Reason:</strong> {{ adaptive_risk['risk_reason'] or 'Calculated from current state and clinical rules.' }}</p>
+            <p><strong>Recommendation:</strong> {{ adaptive_risk['recommendation'] or 'Continue regular monitoring and follow care plan.' }}</p>
+        </div>
+
+        <div class="card">
+            <h2>Health Summary</h2>
+            <p>{{ patient_health_summary }}</p>
+        </div>
+
+        <div class="card">
+            <h2>Doctor Prescriptions</h2>
+            {% for p in prescriptions %}
+            <p><strong>Medicine:</strong> {{ p['medicine_name'] }}</p>
+            <p><strong>Dosage:</strong> {{ p['dosage'] }} | <strong>Frequency:</strong> {{ p['frequency'] }}</p>
+            <p><strong>Instructions:</strong> {{ p['instructions'] or 'N/A' }}</p>
+            <p><strong>Start Date:</strong> {{ p['start_date'] }} | <strong>Prescribed By:</strong> {{ p['doctor_name'] or 'Doctor' }}</p>
+            <hr />
+            {% else %}
+            <p>No doctor prescriptions yet.</p>
+            {% endfor %}
         </div>
 
         <div class="grid-2">

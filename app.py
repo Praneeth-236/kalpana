@@ -1,9 +1,19 @@
-from datetime import date, datetime
+from datetime import datetime
 
 from flask import Flask, abort, redirect, render_template, send_file, request, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from adherence_tracker import add_medicine, calculate_adherence_score, log_medicine_taken
+from adaptive_question_engine import (
+    get_fallback_questions,
+    get_adaptive_questions,
+    get_patient_state,
+    is_assessment_due,
+    select_adaptive_questions,
+    update_patient_state,
+)
 from carebridge_engine import calculate_patient_risk, generate_doctor_recommendation
+from config import BASE_URL
 from database import init_db
 from emergency_engine import recommend_emergency_hospital
 from explanation_engine import (
@@ -11,13 +21,21 @@ from explanation_engine import (
     generate_hospital_explanation,
 )
 from health_monitor import compute_health_stability
+from health_summary_engine import generate_patient_summary
 from models import (
+    add_doctor_prescription,
+    approve_doctor_patient_link,
     add_question,
-    create_health_log,
+    connect_patient_to_doctor,
+    create_doctor_account,
     create_questionnaire,
     create_user,
+    get_approved_patients_for_doctor,
+    get_assessment_history_for_patient,
+    get_doctor_patient_prescriptions,
     get_answer_map_for_questionnaire_user,
     get_doctor,
+    get_doctor_by_email,
     get_doctors_by_hospital,
     get_health_logs,
     get_hospital,
@@ -29,6 +47,11 @@ from models import (
     get_questions_for_questionnaire,
     get_user,
     get_user_medicines,
+    get_patient_state_row,
+    get_pending_links_for_doctor,
+    get_patient_prescriptions,
+    get_portal_doctor,
+    is_doctor_linked_to_patient,
     link_patient_doctor,
     list_hospitals,
     save_answer,
@@ -38,6 +61,23 @@ from scoring_engine import rank_hospitals
 
 app = Flask(__name__)
 app.secret_key = "carematch-hackathon-secret"
+
+
+def _is_local_url(value):
+    normalized = (value or "").lower()
+    return "127.0.0.1" in normalized or "localhost" in normalized
+
+
+def _resolve_qr_base_url(request_host_url):
+    # Priority:
+    # 1) Public BASE_URL from config/env/deployment
+    # 2) Public request host (when app is accessed via tunnel/domain)
+    # 3) Local fallback
+    if not _is_local_url(BASE_URL):
+        return BASE_URL
+    if not _is_local_url(request_host_url):
+        return request_host_url
+    return BASE_URL
 
 
 @app.before_request
@@ -50,6 +90,13 @@ def _get_current_user():
     if not user_id:
         return None
     return get_user(user_id)
+
+
+def _get_current_doctor():
+    doctor_id = session.get("doctor_id")
+    if not doctor_id:
+        return None
+    return get_portal_doctor(doctor_id)
 
 
 def _rank_for_user(user):
@@ -102,6 +149,188 @@ def results():
         "hospital_results.html",
         user=user,
         ranked_hospitals=ranked_hospitals,
+    )
+
+
+@app.route("/doctor/register", methods=["GET", "POST"])
+def doctor_register():
+    message = None
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        specialization = request.form.get("specialization", "General").strip()
+        hospital = request.form.get("hospital", "Independent").strip()
+
+        if not name or not email or not password:
+            message = "Name, email, and password are required."
+        elif get_doctor_by_email(email):
+            message = "Doctor with this email already exists."
+        else:
+            password_hash = generate_password_hash(password)
+            create_doctor_account(
+                name=name,
+                email=email,
+                password=password_hash,
+                specialization=specialization,
+                hospital=hospital,
+                created_at=datetime.now().isoformat(timespec="seconds"),
+            )
+            return redirect(url_for("doctor_login"))
+
+    return render_template("doctor_register.html", message=message)
+
+
+@app.route("/doctor/login", methods=["GET", "POST"])
+def doctor_login():
+    message = None
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        doctor = get_doctor_by_email(email)
+        if not doctor or not doctor["password"]:
+            message = "Invalid email or password."
+        elif not check_password_hash(doctor["password"], password):
+            message = "Invalid email or password."
+        else:
+            session["doctor_id"] = doctor["id"]
+            return redirect(url_for("doctor_portal_dashboard"))
+
+    return render_template("doctor_login.html", message=message)
+
+
+@app.route("/doctor/dashboard")
+def doctor_portal_dashboard():
+    doctor = _get_current_doctor()
+    if not doctor:
+        return redirect(url_for("doctor_login"))
+
+    linked_patients = get_approved_patients_for_doctor(doctor["id"])
+    pending_links = get_pending_links_for_doctor(doctor["id"])
+
+    patient_rows = []
+    for patient in linked_patients:
+        patient_rows.append(
+            {
+                "patient": patient,
+                "summary": generate_patient_summary(patient["patient_id"]),
+            }
+        )
+
+    return render_template(
+        "doctor_dashboard.html",
+        portal_mode=True,
+        doctor=doctor,
+        patient_rows=patient_rows,
+        pending_links=pending_links,
+    )
+
+
+@app.route("/connect_doctor", methods=["GET", "POST"])
+def connect_doctor():
+    user = _get_current_user()
+    if not user:
+        return redirect(url_for("search"))
+
+    message = None
+    if request.method == "POST":
+        doctor_email = request.form.get("doctor_email", "").strip().lower()
+        doctor = get_doctor_by_email(doctor_email)
+        if not doctor:
+            message = "Doctor not found for this email."
+        else:
+            connect_patient_to_doctor(
+                doctor_id=doctor["id"],
+                patient_id=user["id"],
+                created_at=datetime.now().isoformat(timespec="seconds"),
+            )
+            message = "Connection request sent to doctor (pending approval)."
+
+    return render_template("connect_doctor.html", user=user, message=message)
+
+
+@app.route("/doctor/approve_patient/<int:link_id>")
+def doctor_approve_patient(link_id):
+    doctor = _get_current_doctor()
+    if not doctor:
+        return redirect(url_for("doctor_login"))
+
+    approve_doctor_patient_link(link_id, doctor["id"])
+    return redirect(url_for("doctor_portal_dashboard"))
+
+
+@app.route("/doctor/patient/<int:patient_id>")
+def doctor_patient_detail(patient_id):
+    doctor = _get_current_doctor()
+    if not doctor:
+        return redirect(url_for("doctor_login"))
+
+    if not is_doctor_linked_to_patient(doctor["id"], patient_id):
+        abort(403)
+
+    patient = get_user(patient_id)
+    patient_state = get_patient_state_row(patient_id)
+    assessment_history = get_assessment_history_for_patient(patient_id, limit=30)
+    prescriptions = get_doctor_patient_prescriptions(doctor["id"], patient_id)
+    adherence = calculate_adherence_score(patient_id)
+    patient_health_summary = generate_patient_summary(patient_id)
+
+    return render_template(
+        "doctor_patient.html",
+        doctor=doctor,
+        patient=patient,
+        patient_state=patient_state,
+        assessment_history=assessment_history,
+        prescriptions=prescriptions,
+        adherence=adherence,
+        patient_health_summary=patient_health_summary,
+    )
+
+
+@app.route("/doctor/add_prescription/<int:patient_id>", methods=["GET", "POST"])
+def doctor_add_prescription(patient_id):
+    doctor = _get_current_doctor()
+    if not doctor:
+        return redirect(url_for("doctor_login"))
+
+    if not is_doctor_linked_to_patient(doctor["id"], patient_id):
+        abort(403)
+
+    patient = get_user(patient_id)
+    if not patient:
+        abort(404)
+
+    message = None
+    if request.method == "POST":
+        medicine_name = request.form.get("medicine_name", "").strip()
+        dosage = request.form.get("dosage", "").strip()
+        frequency = request.form.get("frequency", "").strip()
+        instructions = request.form.get("instructions", "").strip()
+        start_date = request.form.get("start_date", "").strip()
+
+        if medicine_name and dosage and frequency and start_date:
+            add_doctor_prescription(
+                doctor_id=doctor["id"],
+                patient_id=patient_id,
+                medicine_name=medicine_name,
+                dosage=dosage,
+                frequency=frequency,
+                instructions=instructions,
+                start_date=start_date,
+                created_at=datetime.now().isoformat(timespec="seconds"),
+            )
+            return redirect(url_for("doctor_patient_detail", patient_id=patient_id))
+
+        message = "Please fill all required fields."
+
+    return render_template(
+        "doctor_add_prescription.html",
+        doctor=doctor,
+        patient=patient,
+        message=message,
     )
 
 
@@ -159,44 +388,6 @@ def medicines():
     )
 
 
-@app.route("/health_assessment", methods=["GET", "POST"])
-def health_assessment():
-    user = _get_current_user()
-    if not user:
-        return redirect(url_for("search"))
-
-    latest_result = None
-
-    if request.method == "POST":
-        sleep_hours = float(request.form.get("sleep_hours", 0))
-        stress_level = int(request.form.get("stress_level", 5))
-        energy_level = int(request.form.get("energy_level", 5))
-        symptoms = request.form.get("symptoms", "").strip()
-
-        adherence = calculate_adherence_score(user["id"])
-        latest_result = compute_health_stability(
-            sleep_hours=sleep_hours,
-            stress_level=stress_level,
-            energy_level=energy_level,
-            adherence_score=adherence["ratio"],
-        )
-
-        create_health_log(
-            user_id=user["id"],
-            sleep_hours=sleep_hours,
-            stress_level=stress_level,
-            energy_level=energy_level,
-            symptoms=symptoms,
-            date=str(date.today()),
-        )
-
-    return render_template(
-        "health_assessment.html",
-        user=user,
-        latest_result=latest_result,
-    )
-
-
 @app.route("/dashboard")
 def dashboard():
     user = _get_current_user()
@@ -205,6 +396,7 @@ def dashboard():
 
     adherence = calculate_adherence_score(user["id"])
     medicines = get_user_medicines(user["id"])
+    prescriptions = get_patient_prescriptions(user["id"])
     health_logs = get_health_logs(user["id"])
     latest_log = get_latest_health_log(user["id"])
 
@@ -219,15 +411,27 @@ def dashboard():
 
     ranked_hospitals = _rank_for_user(user)
     top_recommendation = ranked_hospitals[0] if ranked_hospitals else None
+    adaptive_state = get_patient_state(user["id"])
+    patient_health_summary = generate_patient_summary(user["id"])
+    adaptive_risk = {
+        "risk": adaptive_state.get("risk_level") or calculate_patient_risk(user["id"])["risk"],
+        "risk_probability": adaptive_state.get("risk_probability"),
+        "risk_reason": adaptive_state.get("risk_reason"),
+        "recommendation": adaptive_state.get("recommendation"),
+    }
 
     return render_template(
         "dashboard.html",
         user=user,
         adherence=adherence,
         medicines=medicines,
+        prescriptions=prescriptions,
         health_logs=health_logs,
         health_summary=health_summary,
+        patient_health_summary=patient_health_summary,
         top_recommendation=top_recommendation,
+        adaptive_state=adaptive_state,
+        adaptive_risk=adaptive_risk,
     )
 
 
@@ -265,8 +469,27 @@ def generate_qr_route(user_id):
     if not user:
         abort(404)
 
-    file_path = generate_qr(user_id)
+    qr_base_url = _resolve_qr_base_url(request.host_url)
+    file_path = generate_qr(user_id, base_url=qr_base_url)
     return send_file(file_path, mimetype="image/png")
+
+
+@app.route("/qr/<int:user_id>")
+def view_qr(user_id):
+    user = get_user(user_id)
+    if not user:
+        abort(404)
+
+    from qr_generator import generate_qr as _generate_qr
+
+    qr_base_url = _resolve_qr_base_url(request.host_url)
+    filepath = _generate_qr(user_id, base_url=qr_base_url)
+
+    return f'''
+    <h2>Emergency QR Code</h2>
+    <img src="/{filepath}" width="250">
+    <p>Scan this QR from any phone.</p>
+    '''
 
 
 @app.route("/doctor/<int:doctor_id>/dashboard", methods=["GET", "POST"])
@@ -302,6 +525,7 @@ def doctor_dashboard(doctor_id):
 
     return render_template(
         "doctor_dashboard.html",
+        portal_mode=False,
         doctor=doctor,
         patient_cards=patient_cards,
     )
@@ -428,6 +652,135 @@ def family_dashboard(user_id):
         recommendation=recommendation,
         recommendation_explanation=recommendation_explanation,
         emergency_hospital=emergency_hospital,
+    )
+
+
+@app.route("/assessment/<int:user_id>")
+def adaptive_assessment(user_id):
+    user = get_user(user_id)
+    if not user:
+        abort(404)
+
+    state = get_patient_state(user_id)
+    due = is_assessment_due(user_id)
+    questions_or_message = get_adaptive_questions(user_id)
+    if isinstance(questions_or_message, str):
+        due_message = questions_or_message
+        questions = []
+    else:
+        due_message = None
+        questions = questions_or_message
+
+    if due and not questions:
+        questions = [
+            {
+                "id": f"fallback_{idx}",
+                "question_text": question_text,
+                "category": "stress",
+                "weight": 6,
+                "source": "fallback",
+            }
+            for idx, question_text in enumerate(get_fallback_questions(), start=1)
+        ]
+
+    return render_template(
+        "adaptive_assessment.html",
+        user=user,
+        state=state,
+        due=due,
+        due_message=due_message,
+        questions=questions,
+        result=None,
+    )
+
+
+@app.route("/submit_assessment/<int:user_id>", methods=["POST"])
+def submit_adaptive_assessment(user_id):
+    user = get_user(user_id)
+    if not user:
+        abort(404)
+
+    if not is_assessment_due(user_id):
+        state = get_patient_state(user_id)
+        return render_template(
+            "adaptive_assessment.html",
+            user=user,
+            state=state,
+            due=False,
+            due_message="Next assessment available tomorrow",
+            questions=[],
+            result=None,
+        )
+
+    questions_or_message = get_adaptive_questions(user_id)
+    questions = questions_or_message if isinstance(questions_or_message, list) else []
+    if not questions:
+        questions = [
+            {
+                "id": f"fallback_{idx}",
+                "question_text": question_text,
+                "category": "stress",
+                "weight": 6,
+                "source": "fallback",
+            }
+            for idx, question_text in enumerate(get_fallback_questions(), start=1)
+        ]
+    answer_values = request.form.getlist("answers")
+
+    parsed_answers = {}
+    question_context = {}
+    for question, value in zip(questions, answer_values):
+        if value and str(value).strip():
+            question_key = str(question["id"])
+            parsed_answers[question_key] = int(value)
+            question_context[question_key] = {
+                "category": question.get("category", "stress"),
+                "weight": int(question.get("weight", 6)),
+                "question_text": question.get("question_text", "Adaptive assessment question"),
+            }
+
+    state = update_patient_state(
+        user_id,
+        parsed_answers,
+        question_context=question_context,
+    )
+
+    adherence = calculate_adherence_score(user_id)
+    latest_log = get_latest_health_log(user_id)
+    health_score = 0.0
+    if latest_log:
+        health_summary = compute_health_stability(
+            sleep_hours=latest_log["sleep_hours"],
+            stress_level=latest_log["stress_level"],
+            energy_level=latest_log["energy_level"],
+            adherence_score=adherence["ratio"],
+        )
+        health_score = health_summary["health_percentage"]
+
+    risk_snapshot = calculate_patient_risk(user_id)
+    recommendation = generate_doctor_recommendation(risk_snapshot["risk"])
+
+    next_due = is_assessment_due(user_id)
+    next_questions_or_message = get_adaptive_questions(user_id)
+    if isinstance(next_questions_or_message, str):
+        next_questions = []
+        next_due_message = next_questions_or_message
+    else:
+        next_questions = next_questions_or_message
+        next_due_message = None
+
+    return render_template(
+        "adaptive_assessment.html",
+        user=user,
+        state=state,
+        due=next_due,
+        due_message=next_due_message,
+        questions=next_questions,
+        result={
+            "health_score": round(health_score, 2),
+            "risk_level": risk_snapshot["risk"],
+            "recommendation": recommendation,
+        },
     )
 
 

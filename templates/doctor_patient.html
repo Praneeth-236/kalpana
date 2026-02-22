@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Doctor Patient View - CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Patient Detail</h1>
+        <p class="subtitle">Doctor: {{ doctor['name'] }} | Patient: {{ patient['name'] }}</p>
+
+        <div class="actions">
+            <a class="btn" href="{{ url_for('doctor_portal_dashboard') }}">Back to Doctor Dashboard</a>
+            <a class="btn" href="{{ url_for('doctor_add_prescription', patient_id=patient['id']) }}">Add Prescription</a>
+        </div>
+
+        <div class="card">
+            <h2>Health Summary</h2>
+            <p>{{ patient_health_summary }}</p>
+            <p><strong>Adherence:</strong> {{ adherence['percentage'] }}% ({{ adherence['taken'] }}/{{ adherence['total'] }})</p>
+        </div>
+
+        <div class="card">
+            <h2>Patient State</h2>
+            {% if patient_state %}
+            <p><strong>Risk Level:</strong> {{ patient_state['risk_level'] or 'N/A' }}</p>
+            <p><strong>Risk Probability:</strong> {{ patient_state['risk_probability'] if patient_state['risk_probability'] is not none else 'N/A' }}%</p>
+            <p><strong>Stress Score:</strong> {{ patient_state['stress_score'] }}</p>
+            <p><strong>Energy Score:</strong> {{ patient_state['energy_score'] }}</p>
+            <p><strong>Trend:</strong> {{ patient_state['trend'] }}</p>
+            <p><strong>Last Assessment:</strong> {{ patient_state['last_assessment_at'] or 'N/A' }}</p>
+            <p><strong>Reason:</strong> {{ patient_state['risk_reason'] or 'N/A' }}</p>
+            <p><strong>Recommendation:</strong> {{ patient_state['recommendation'] or 'N/A' }}</p>
+            {% else %}
+            <p>No patient state available yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Assessment History</h2>
+            {% for row in assessment_history %}
+            <p><strong>Q:</strong> {{ row['question'] }}</p>
+            <p><strong>A:</strong> {{ row['answer'] }}</p>
+            <p><strong>At:</strong> {{ row['timestamp'] }}</p>
+            <hr />
+            {% else %}
+            <p>No assessment history available.</p>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <h2>Prescriptions</h2>
+            {% for p in prescriptions %}
+            <p><strong>Medicine:</strong> {{ p['medicine_name'] }}</p>
+            <p><strong>Dosage:</strong> {{ p['dosage'] }} | <strong>Frequency:</strong> {{ p['frequency'] }}</p>
+            <p><strong>Instructions:</strong> {{ p['instructions'] or 'N/A' }}</p>
+            <p><strong>Start Date:</strong> {{ p['start_date'] }}</p>
+            <hr />
+            {% else %}
+            <p>No prescriptions available.</p>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

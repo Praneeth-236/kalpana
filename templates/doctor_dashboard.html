@@ -11,6 +11,44 @@
         <h1>Doctor Dashboard</h1>
         <p class="subtitle">Doctor: {{ doctor['name'] }} ({{ doctor['specialization'] }})</p>
 
+        {% if portal_mode %}
+        <div class="actions">
+            <a class="btn" href="{{ url_for('doctor_portal_dashboard') }}">Refresh</a>
+        </div>
+
+        <div class="card">
+            <h2>Pending Patient Requests</h2>
+            {% for link in pending_links %}
+            <p>
+                <strong>{{ link['patient_name'] }}</strong> (Patient ID: {{ link['patient_id'] }})
+                <a class="btn" href="{{ url_for('doctor_approve_patient', link_id=link['id']) }}">Approve</a>
+            </p>
+            {% else %}
+            <p>No pending requests.</p>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <h2>Linked Patients</h2>
+            {% for row in patient_rows %}
+            {% set p = row['patient'] %}
+            <p><strong>Name:</strong> {{ p['name'] }}</p>
+            <p><strong>Risk Level:</strong> {{ p['risk_level'] or 'N/A' }}</p>
+            <p><strong>Stress Score:</strong> {{ p['stress_score'] if p['stress_score'] is not none else 'N/A' }}</p>
+            <p><strong>Energy Score:</strong> {{ p['energy_score'] if p['energy_score'] is not none else 'N/A' }}</p>
+            <p><strong>Trend:</strong> {{ p['trend'] or 'N/A' }}</p>
+            <p><strong>Last Assessment:</strong> {{ p['last_assessment_at'] or 'N/A' }}</p>
+            <p><strong>Patient Summary:</strong> {{ row['summary'] }}</p>
+            <a class="btn" href="{{ url_for('doctor_patient_detail', patient_id=p['patient_id']) }}">View Patient</a>
+            <a class="btn" href="{{ url_for('doctor_add_prescription', patient_id=p['patient_id']) }}">Add Prescription</a>
+            <hr />
+            {% else %}
+            <p>No approved linked patients yet.</p>
+            {% endfor %}
+        </div>
+
+        {% else %}
+
         <div class="actions">
             <a class="btn" href="{{ url_for('doctor_create_questionnaire', doctor_id=doctor['id']) }}">Create Questionnaire</a>
         </div>
@@ -39,6 +77,7 @@
             <p>No linked patients yet.</p>
         </div>
         {% endfor %}
+        {% endif %}
     </div>
 </body>
 </html>

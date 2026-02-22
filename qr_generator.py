@@ -1,22 +1,21 @@
-from pathlib import Path
-
 import qrcode
+import os
+
+from config import BASE_URL
 
 
-BASE_DIR = Path(__file__).resolve().parent
-QRCODE_DIR = BASE_DIR / "static" / "qrcodes"
-
-
-def generate_qr(user_id):
+def generate_qr(user_id, base_url=None):
     """
     Generate QR code for emergency profile URL and save it under static/qrcodes.
-    Returns absolute image path.
+    Returns static relative image path.
     """
-    QRCODE_DIR.mkdir(parents=True, exist_ok=True)
+    effective_base = (base_url or BASE_URL).rstrip("/")
+    url = f"{effective_base}/emergency/{user_id}"
 
-    emergency_url = f"http://localhost:5000/emergency/{user_id}"
-    image = qrcode.make(emergency_url)
+    os.makedirs("static/qrcodes", exist_ok=True)
+    filename = f"static/qrcodes/user_{user_id}.png"
 
-    file_path = QRCODE_DIR / f"user_{user_id}.png"
-    image.save(file_path)
-    return file_path
+    qr = qrcode.make(url)
+    qr.save(filename)
+
+    return filename

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Prescription - CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Add Prescription</h1>
+        <p class="subtitle">Doctor: {{ doctor['name'] }} | Patient: {{ patient['name'] }}</p>
+
+        {% if message %}
+        <div class="card"><p>{{ message }}</p></div>
+        {% endif %}
+
+        <form class="card" method="POST" action="{{ url_for('doctor_add_prescription', patient_id=patient['id']) }}">
+            <label>Medicine Name</label>
+            <input type="text" name="medicine_name" required />
+
+            <label>Dosage</label>
+            <input type="text" name="dosage" placeholder="500mg" required />
+
+            <label>Frequency</label>
+            <input type="text" name="frequency" placeholder="Twice daily" required />
+
+            <label>Instructions</label>
+            <textarea name="instructions" rows="3" placeholder="After food, avoid missed doses..."></textarea>
+
+            <label>Start Date</label>
+            <input type="date" name="start_date" required />
+
+            <button class="btn" type="submit">Save Prescription</button>
+            <a class="btn" href="{{ url_for('doctor_patient_detail', patient_id=patient['id']) }}">Back</a>
+        </form>
+    </div>
+</body>
+</html>

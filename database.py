@@ -61,7 +61,44 @@ def create_tables(conn):
             experience_years INTEGER NOT NULL,
             rating REAL NOT NULL,
             contact TEXT,
+            email TEXT,
+            password TEXT,
+            hospital TEXT,
+            created_at TEXT,
+            is_portal_doctor INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (hospital_id) REFERENCES Hospital (id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS DoctorPatientLink (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            doctor_id INTEGER NOT NULL,
+            patient_id INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (doctor_id) REFERENCES Doctor (id),
+            FOREIGN KEY (patient_id) REFERENCES User (id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS DoctorPrescription (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            doctor_id INTEGER NOT NULL,
+            patient_id INTEGER NOT NULL,
+            medicine_name TEXT NOT NULL,
+            dosage TEXT NOT NULL,
+            frequency TEXT NOT NULL,
+            instructions TEXT,
+            start_date TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (doctor_id) REFERENCES Doctor (id),
+            FOREIGN KEY (patient_id) REFERENCES User (id)
         )
         """
     )
@@ -158,6 +195,64 @@ def create_tables(conn):
         """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS PatientState (
+            user_id INTEGER PRIMARY KEY,
+            stress_score INTEGER NOT NULL,
+            energy_score INTEGER NOT NULL,
+            trend TEXT NOT NULL,
+            last_updated TEXT NOT NULL,
+            last_assessment_at TEXT,
+            next_assessment_due TEXT,
+            risk_level TEXT,
+            risk_probability INTEGER,
+            risk_reason TEXT,
+            recommendation TEXT,
+            FOREIGN KEY (user_id) REFERENCES User (id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS QuestionBank (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            condition TEXT NOT NULL,
+            category TEXT NOT NULL,
+            question_text TEXT NOT NULL,
+            weight INTEGER NOT NULL
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS PatientAnswer (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            question_id INTEGER NOT NULL,
+            answer_value INTEGER NOT NULL,
+            timestamp TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES User (id),
+            FOREIGN KEY (question_id) REFERENCES QuestionBank (id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS AssessmentHistory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            question TEXT NOT NULL,
+            answer INTEGER NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES User (id)
+        )
+        """
+    )
+
     conn.commit()
 
 
@@ -192,6 +287,17 @@ def migrate_schema(conn):
     )
     _add_column_if_missing(conn, "Hospital", "ambulance_number", "TEXT")
     _add_column_if_missing(conn, "Doctor", "contact", "TEXT")
+    _add_column_if_missing(conn, "Doctor", "email", "TEXT")
+    _add_column_if_missing(conn, "Doctor", "password", "TEXT")
+    _add_column_if_missing(conn, "Doctor", "hospital", "TEXT")
+    _add_column_if_missing(conn, "Doctor", "created_at", "TEXT")
+    _add_column_if_missing(conn, "Doctor", "is_portal_doctor", "INTEGER NOT NULL DEFAULT 0")
+    _add_column_if_missing(conn, "PatientState", "risk_level", "TEXT")
+    _add_column_if_missing(conn, "PatientState", "risk_probability", "INTEGER")
+    _add_column_if_missing(conn, "PatientState", "risk_reason", "TEXT")
+    _add_column_if_missing(conn, "PatientState", "recommendation", "TEXT")
+    _add_column_if_missing(conn, "PatientState", "last_assessment_at", "TEXT")
+    _add_column_if_missing(conn, "PatientState", "next_assessment_due", "TEXT")
 
     conn.commit()
 
@@ -349,6 +455,38 @@ def backfill_doctor_contact_data(conn):
     conn.commit()
 
 
+def seed_question_bank(conn):
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) AS count FROM QuestionBank")
+    existing = cursor.fetchone()["count"]
+
+    if existing > 0:
+        return
+
+    seed_questions = [
+        ("cardiology", "stress", "Do you feel chest tightness when stressed?", 8),
+        (
+            "cardiology",
+            "energy",
+            "Do you feel unusually fatigued after minor activity?",
+            7,
+        ),
+        ("diabetes", "stress", "Do you feel dizziness when stressed?", 7),
+        ("diabetes", "energy", "Do you feel sudden weakness?", 6),
+        ("general", "stress", "Do you feel mentally overwhelmed?", 5),
+        ("general", "energy", "How energetic do you feel today?", 5),
+    ]
+
+    cursor.executemany(
+        """
+        INSERT INTO QuestionBank (condition, category, question_text, weight)
+        VALUES (?, ?, ?, ?)
+        """,
+        seed_questions,
+    )
+    conn.commit()
+
+
 def init_db():
     conn = get_connection()
     create_tables(conn)
@@ -356,4 +494,5 @@ def init_db():
     seed_hospitals_and_doctors(conn)
     backfill_emergency_hospital_data(conn)
     backfill_doctor_contact_data(conn)
+    seed_question_bank(conn)
     conn.close()

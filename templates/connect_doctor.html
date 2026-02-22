@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connect Doctor - CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Connect Doctor</h1>
+        <p class="subtitle">Patient: {{ user['name'] }} | Send request using doctor email</p>
+
+        {% if message %}
+        <div class="card"><p>{{ message }}</p></div>
+        {% endif %}
+
+        <form class="card" method="POST" action="{{ url_for('connect_doctor') }}">
+            <label>Doctor Email</label>
+            <input type="email" name="doctor_email" required />
+            <button class="btn" type="submit">Send Connection Request</button>
+            <a class="btn" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+        </form>
+    </div>
+</body>
+</html>
