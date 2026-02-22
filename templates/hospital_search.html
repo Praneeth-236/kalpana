@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hospital Search - CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Hospital Search</h1>
+        <p class="subtitle">Enter patient details for intelligent recommendations.</p>
+
+        <form class="card" method="POST" action="{{ url_for('search') }}">
+            <label>Name</label>
+            <input type="text" name="name" required />
+
+            <label>Age</label>
+            <input type="number" name="age" min="1" max="120" value="30" required />
+
+            <label>Gender</label>
+            <input type="text" name="gender" placeholder="Male / Female / Other" required />
+
+            <label>Location</label>
+            <input type="text" name="location" placeholder="Bengaluru" required />
+
+            <label>Condition</label>
+            <input type="text" name="condition" placeholder="cardiology / neurology / general" required />
+
+            <label>Income Range</label>
+            <input type="text" name="income_range" placeholder="Medium" />
+
+            <label>Insurance Level</label>
+            <input type="text" name="insurance_level" placeholder="Basic / Premium" />
+
+            <label>Budget Preference (₹)</label>
+            <input type="number" name="budget_preference" value="3000" min="500" required />
+
+            <label>Blood Group</label>
+            <input type="text" name="blood_group" placeholder="O+, A-, B+, AB+" />
+
+            <label>Allergies</label>
+            <input type="text" name="allergies" placeholder="Penicillin, peanuts, dust..." />
+
+            <label>Medical Conditions (Emergency)</label>
+            <input type="text" name="medical_conditions" placeholder="Diabetes, asthma, hypertension..." />
+
+            <label>Emergency Contact Name</label>
+            <input type="text" name="emergency_contact_name" placeholder="Family member or guardian" />
+
+            <label>Emergency Contact Phone</label>
+            <input type="text" name="emergency_contact_phone" placeholder="+91-9XXXXXXXXX" />
+
+            <button type="submit" class="btn">Find Hospitals</button>
+        </form>
+    </div>
+</body>
+</html>

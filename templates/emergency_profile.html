@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LifeLink Emergency Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <style>
+        .emergency-title {
+            font-size: 34px;
+            color: #b91c1c;
+            margin-bottom: 8px;
+        }
+        .emergency-sub {
+            font-size: 18px;
+            margin-bottom: 16px;
+        }
+        .big-text {
+            font-size: 20px;
+            line-height: 1.5;
+        }
+        .call-btn {
+            display: inline-block;
+            background: #b91c1c;
+            color: #fff;
+            font-size: 18px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="emergency-title">PATIENT EMERGENCY INFO</h1>
+            <p class="emergency-sub">LifeLink Emergency QR System</p>
+
+            <div class="big-text">
+                <p><strong>Name:</strong> {{ user['name'] }}</p>
+                <p><strong>Blood Group:</strong> {{ user['blood_group'] or 'Not Provided' }}</p>
+                <p><strong>Medical Conditions:</strong> {{ user['medical_conditions'] or user['condition'] or 'Not Provided' }}</p>
+                <p><strong>Allergies:</strong> {{ user['allergies'] or 'Not Provided' }}</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Emergency Contact</h2>
+            <div class="big-text">
+                <p><strong>Name:</strong> {{ user['emergency_contact_name'] or 'Not Provided' }}</p>
+                <p><strong>Phone:</strong> {{ user['emergency_contact_phone'] or 'Not Provided' }}</p>
+                {% if user['emergency_contact_phone'] %}
+                <a class="btn" href="tel:{{ user['emergency_contact_phone'] }}">Call Family Contact</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Recommended Hospital</h2>
+            {% if hospital %}
+            <div class="big-text">
+                <p><strong>Hospital Name:</strong> {{ hospital['name'] }}</p>
+                <p><strong>Location:</strong> {{ hospital['location'] }}</p>
+                <p><strong>Ambulance Number:</strong> {{ hospital['ambulance_number'] }}</p>
+                <a class="call-btn" href="{{ url_for('call_ambulance', hospital_id=hospital['hospital_id']) }}">Call Ambulance</a>
+            </div>
+            {% else %}
+            <p>No emergency-capable hospital found.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

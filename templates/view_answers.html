@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Patient Answers - CareBridge</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Patient Responses</h1>
+        <p class="subtitle">Doctor: {{ doctor['name'] }} | Patient: {{ patient['name'] }} (User ID: {{ patient['id'] }})</p>
+
+        <div class="actions">
+            <a class="btn" href="{{ url_for('doctor_dashboard', doctor_id=doctor['id']) }}">Back to Dashboard</a>
+        </div>
+
+        {% for view in questionnaire_views %}
+        <div class="card">
+            <h2>{{ view['questionnaire']['title'] }}</h2>
+            <p><strong>Created:</strong> {{ view['questionnaire']['created_at'] }}</p>
+
+            {% for question in view['questions'] %}
+            <p><strong>Q:</strong> {{ question['question_text'] }}</p>
+            {% set answer_row = view['answer_map'].get(question['id']) %}
+            <p><strong>A:</strong> {{ answer_row['answer_text'] if answer_row else 'No response submitted' }}</p>
+            <hr />
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card">
+            <p>No questionnaires found for this doctor.</p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Questionnaire - CareBridge</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Create Questionnaire</h1>
+        <p class="subtitle">Doctor: {{ doctor['name'] }}</p>
+
+        <form class="card" method="POST" action="{{ url_for('doctor_create_questionnaire', doctor_id=doctor['id']) }}">
+            <label>Questionnaire Title</label>
+            <input type="text" name="title" placeholder="Post-treatment checkup" required />
+
+            <label>Questions (one per line)</label>
+            <textarea name="questions" rows="8" placeholder="How are you feeling today?&#10;Any breathing issues?&#10;Are you taking medicines on time?" required></textarea>
+
+            <button class="btn" type="submit">Create</button>
+            <a class="btn" href="{{ url_for('doctor_dashboard', doctor_id=doctor['id']) }}">Back</a>
+        </form>
+    </div>
+</body>
+</html>

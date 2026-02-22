@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Patient Questionnaires - CareBridge</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Patient Questionnaires</h1>
+        <p class="subtitle">Patient: {{ user['name'] }} (User ID: {{ user['id'] }})</p>
+
+        {% if questionnaire and questions %}
+        <div class="card">
+            <h2>Answer: {{ questionnaire['title'] }}</h2>
+            <form method="POST" action="{{ url_for('patient_answer_questionnaire', user_id=user['id'], questionnaire_id=questionnaire['id']) }}">
+                {% for q in questions %}
+                <label>{{ q['question_text'] }}</label>
+                <textarea name="q_{{ q['id'] }}" rows="3" required></textarea>
+                {% endfor %}
+                <button class="btn" type="submit">Submit Answers</button>
+                <a class="btn" href="{{ url_for('patient_questionnaires', user_id=user['id']) }}">Cancel</a>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <h2>Available Questionnaires</h2>
+            {% for q in questionnaires %}
+            <p>
+                <strong>{{ q['title'] }}</strong>
+                ({{ q['created_at'] }})
+                <a class="btn" href="{{ url_for('patient_answer_questionnaire', user_id=user['id'], questionnaire_id=q['id']) }}">Answer</a>
+            </p>
+            {% else %}
+            <p>No questionnaires available.</p>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

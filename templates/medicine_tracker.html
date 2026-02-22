@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medicine Tracker - CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Medicine Adherence Tracker</h1>
+        <p class="subtitle">Track dosage completion and adherence score.</p>
+
+        <div class="actions">
+            <a class="btn" href="{{ url_for('results') }}">Hospital Results</a>
+            <a class="btn" href="{{ url_for('health_assessment') }}">Health Assessment</a>
+            <a class="btn" href="{{ url_for('dashboard') }}">Dashboard</a>
+        </div>
+
+        <div class="card">
+            <h2>Add Medicine</h2>
+            <form method="POST" action="{{ url_for('medicines') }}">
+                <input type="hidden" name="action" value="add" />
+
+                <label>Medicine Name</label>
+                <input type="text" name="name" required />
+
+                <label>Dosage</label>
+                <input type="text" name="dosage" placeholder="500mg" required />
+
+                <label>Schedule</label>
+                <input type="text" name="schedule" placeholder="Morning, Night" required />
+
+                <label>Total Planned Doses</label>
+                <input type="number" name="total_count" value="10" min="1" required />
+
+                <button class="btn" type="submit">Add Medicine</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Adherence Score: {{ adherence['percentage'] }}%</h2>
+            <p><strong>Doses Taken:</strong> {{ adherence['taken'] }} / {{ adherence['total'] }}</p>
+        </div>
+
+        {% for medicine in medicines %}
+        <div class="card">
+            <h2>{{ medicine['name'] }}</h2>
+            <p><strong>Dosage:</strong> {{ medicine['dosage'] }}</p>
+            <p><strong>Schedule:</strong> {{ medicine['schedule'] }}</p>
+            <p><strong>Progress:</strong> {{ medicine['taken_count'] }} / {{ medicine['total_count'] }}</p>
+
+            <form method="POST" action="{{ url_for('medicines') }}">
+                <input type="hidden" name="action" value="taken" />
+                <input type="hidden" name="medicine_id" value="{{ medicine['id'] }}" />
+                <button class="btn" type="submit">Log Dose Taken</button>
+            </form>
+        </div>
+        {% else %}
+        <div class="card">
+            <p>No medicines added yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

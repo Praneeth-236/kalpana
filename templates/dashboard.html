@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>CareMatch Dashboard</h1>
+        <p class="subtitle">Overview for {{ user['name'] }}</p>
+
+        <div class="actions">
+            <a class="btn" href="{{ url_for('results') }}">Hospitals</a>
+            <a class="btn" href="{{ url_for('medicines') }}">Medicines</a>
+            <a class="btn" href="{{ url_for('health_assessment') }}">Health Assessment</a>
+            <a class="btn" href="{{ url_for('emergency_profile', user_id=user['id']) }}">Emergency Profile</a>
+            <a class="btn" href="{{ url_for('generate_qr_route', user_id=user['id']) }}">Generate QR</a>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>Adherence Score</h2>
+                <p class="metric">{{ adherence['percentage'] }}%</p>
+                <p>{{ adherence['taken'] }} / {{ adherence['total'] }} doses taken</p>
+            </div>
+
+            <div class="card">
+                <h2>Health Stability Score</h2>
+                {% if health_summary %}
+                <p class="metric">{{ health_summary['health_percentage'] }}%</p>
+                <p>Status: <span class="{% if health_summary['status'] == 'Stable' %}ok{% elif health_summary['status'] == 'Moderate Risk' %}warn{% else %}risk{% endif %}">{{ health_summary['status'] }}</span></p>
+                {% else %}
+                <p>No health assessment submitted yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Hospital Recommendation Summary</h2>
+            {% if top_recommendation %}
+            <p><strong>Top Match:</strong> {{ top_recommendation['hospital_name'] }}</p>
+            <p><strong>Score:</strong> {{ (top_recommendation['score'] * 100) | round(2) }}%</p>
+            <pre class="explanation">{{ top_recommendation['explanation'] }}</pre>
+            {% else %}
+            <p>No recommendation available yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>Medicine Stats</h2>
+                {% for medicine in medicines %}
+                <p>{{ medicine['name'] }}: {{ medicine['taken_count'] }}/{{ medicine['total_count'] }}</p>
+                {% else %}
+                <p>No medicines tracked.</p>
+                {% endfor %}
+            </div>
+
+            <div class="card">
+                <h2>Recent Health Logs</h2>
+                {% for log in health_logs[:5] %}
+                <p>{{ log['date'] }} | Sleep: {{ log['sleep_hours'] }}h | Stress: {{ log['stress_level'] }} | Energy: {{ log['energy_level'] }}</p>
+                {% else %}
+                <p>No health logs available.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

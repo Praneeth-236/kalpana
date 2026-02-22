@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Doctor Dashboard - CareBridge</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Doctor Dashboard</h1>
+        <p class="subtitle">Doctor: {{ doctor['name'] }} ({{ doctor['specialization'] }})</p>
+
+        <div class="actions">
+            <a class="btn" href="{{ url_for('doctor_create_questionnaire', doctor_id=doctor['id']) }}">Create Questionnaire</a>
+        </div>
+
+        <div class="card">
+            <h2>Link Patient</h2>
+            <form method="POST" action="{{ url_for('doctor_dashboard', doctor_id=doctor['id']) }}">
+                <label>Patient User ID</label>
+                <input type="number" name="user_id" min="1" required />
+                <button class="btn" type="submit">Link Patient</button>
+            </form>
+        </div>
+
+        <h2>Linked Patients</h2>
+        {% for item in patient_cards %}
+        <div class="card">
+            <p><strong>Name:</strong> {{ item['patient']['name'] }} (User ID: {{ item['patient']['id'] }})</p>
+            <p><strong>Adherence Score:</strong> {{ item['adherence_score'] }}%</p>
+            <p><strong>Health Stability Score:</strong> {{ item['health_score'] }}%</p>
+            <p><strong>Risk Level:</strong> {{ item['risk'] }}</p>
+            <pre class="explanation">{{ item['recommendation_explanation'] }}</pre>
+            <a class="btn" href="{{ url_for('doctor_view_answers', doctor_id=doctor['id'], user_id=item['patient']['id']) }}">View Answers</a>
+        </div>
+        {% else %}
+        <div class="card">
+            <p>No linked patients yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

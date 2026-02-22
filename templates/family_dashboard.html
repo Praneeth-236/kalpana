@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Family Dashboard - CareBridge</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Family Access Dashboard</h1>
+        <p class="subtitle">Read-only view for patient: {{ user['name'] }}</p>
+
+        <div class="card">
+            <h2>Emergency Profile</h2>
+            <p><strong>Blood Group:</strong> {{ user['blood_group'] or 'Not Provided' }}</p>
+            <p><strong>Medical Conditions:</strong> {{ user['medical_conditions'] or user['condition'] }}</p>
+            <p><strong>Allergies:</strong> {{ user['allergies'] or 'Not Provided' }}</p>
+            <p><strong>Emergency Contact:</strong> {{ user['emergency_contact_name'] or 'Not Provided' }} ({{ user['emergency_contact_phone'] or 'Not Provided' }})</p>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>Adherence Score</h2>
+                <p class="metric">{{ adherence['percentage'] }}%</p>
+            </div>
+            <div class="card">
+                <h2>Health Score</h2>
+                <p class="metric">{{ risk_snapshot['health_score'] }}%</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Risk Level</h2>
+            <p class="metric">{{ risk_snapshot['risk'] }}</p>
+            <pre class="explanation">{{ recommendation_explanation }}</pre>
+        </div>
+
+        <div class="card">
+            <h2>Emergency Hospital</h2>
+            {% if emergency_hospital %}
+            <p><strong>Name:</strong> {{ emergency_hospital['name'] }}</p>
+            <p><strong>Ambulance:</strong> {{ emergency_hospital['ambulance_number'] }}</p>
+            <a class="btn" href="{{ url_for('call_ambulance', hospital_id=emergency_hospital['hospital_id']) }}">Call Ambulance</a>
+            {% else %}
+            <p>No emergency hospital found.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

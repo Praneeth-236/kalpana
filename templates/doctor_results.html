@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Doctors - CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Doctors at {{ hospital['name'] }}</h1>
+        <p class="subtitle">Specialization: {{ hospital['specialization'] }} | Rating: {{ hospital['rating'] }}/5</p>
+
+        <div class="actions">
+            <a class="btn" href="{{ url_for('results') }}">Back to Hospitals</a>
+            <a class="btn" href="{{ url_for('dashboard') }}">Dashboard</a>
+        </div>
+
+        {% for doctor in doctors %}
+        <div class="card">
+            <h2>{{ doctor['name'] }}</h2>
+            <p><strong>Specialization:</strong> {{ doctor['specialization'] }}</p>
+            <p><strong>Experience:</strong> {{ doctor['experience_years'] }} years</p>
+            <p><strong>Rating:</strong> {{ doctor['rating'] }} / 5</p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

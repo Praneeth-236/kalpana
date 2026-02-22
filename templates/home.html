@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>CareMatch AI</h1>
+        <p class="subtitle">Intelligent Healthcare Navigation and Health Monitoring System</p>
+
+        {% if user %}
+        <div class="card">
+            <p><strong>Current User:</strong> {{ user['name'] }} ({{ user['condition'] }})</p>
+            <a class="btn" href="{{ url_for('results') }}">View Recommendations</a>
+            <a class="btn" href="{{ url_for('dashboard') }}">Open Dashboard</a>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <h2>Start</h2>
+            <p>Build your care profile and get ranked hospitals/doctors, medicine adherence insights, and early risk warnings.</p>
+            <a class="btn" href="{{ url_for('search') }}">Go to Search</a>
+        </div>
+    </div>
+</body>
+</html>
