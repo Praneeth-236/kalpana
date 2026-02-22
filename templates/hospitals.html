@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hospitals - CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Ranked Hospitals</h1>
+        <div id="gps-meta" data-has-coords="{{ '1' if user_lat is not none and user_lon is not none else '0' }}"></div>
+        <p class="subtitle">For {{ user['name'] }} (Condition: {{ user['condition'] }}, Budget: ₹{{ user['budget_preference'] }})</p>
+        {% if new_patient_id_notice %}
+        <div class="card">
+            <p><strong>Registration successful.</strong> Your Patient ID is <strong>{{ new_patient_id_notice }}</strong>.</p>
+            <p>Use this Patient ID with your password to log in from Patient Portal later.</p>
+        </div>
+        {% endif %}
+        {% if user_lat is not none and user_lon is not none %}
+        <p class="subtitle">Using your live location ({{ user_lat|round(5) }}, {{ user_lon|round(5) }})</p>
+        {% else %}
+        <p class="subtitle">Fetching your current GPS location for better ranking...</p>
+        <p id="gps-status" class="subtitle"></p>
+        {% endif %}
+
+        <div class="actions">
+            <a class="btn" href="{{ url_for('search') }}">New Search</a>
+            <a class="btn" href="{{ url_for('medicines') }}">Medicine Tracker</a>
+            <a class="btn" href="{{ url_for('patient_dashboard') }}">Dashboard</a>
+        </div>
+
+        <div class="card">
+            <h2>Best Hospital Recommendation</h2>
+            {% if best_hospital %}
+            <p><strong>{{ best_hospital['hospital_name'] }}</strong></p>
+            <p><strong>Score:</strong> {{ (best_hospital['score'] * 100) | round(2) }}%</p>
+            <p><strong>Location:</strong> {{ best_hospital['location'] }}</p>
+            <p><strong>Specialization:</strong> {{ best_hospital['specialization'] }}</p>
+            <p><strong>Rating:</strong> {{ best_hospital['rating'] }} / 5</p>
+            <p><strong>Emergency Capability:</strong> {{ 'Yes' if best_hospital['emergency_capable'] else 'No' }}</p>
+            <pre class="explanation">{{ best_hospital['explanation'] }}</pre>
+            {% else %}
+            <p>No hospital recommendation available.</p>
+            {% endif %}
+        </div>
+
+        {% for hospital in ranked_hospitals %}
+        <div class="card">
+            <h2>#{{ loop.index }} {{ hospital['hospital_name'] }}</h2>
+            <p><strong>Location:</strong> {{ hospital['location'] }}</p>
+            <p><strong>Specialization:</strong> {{ hospital['specialization'] }}</p>
+            <p><strong>Rating:</strong> {{ hospital['rating'] }} / 5</p>
+            <p><strong>Emergency Capability:</strong> {{ 'Yes' if hospital['emergency_capable'] else 'No' }}</p>
+            <p><strong>Composite Score:</strong> {{ (hospital['score'] * 100) | round(2) }}%</p>
+            <pre class="explanation">{{ hospital['explanation'] }}</pre>
+            <a class="btn" href="{{ url_for('doctors', hospital_id=hospital['hospital_id']) }}">View Doctors</a>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+<script>
+(() => {
+    const gpsMeta = document.getElementById("gps-meta");
+    const gpsStatus = document.getElementById("gps-status");
+    const hasCoords = gpsMeta && gpsMeta.dataset.hasCoords === "1";
+    if (hasCoords) {
+        return;
+    }
+
+    if (!navigator.geolocation) {
+        if (gpsStatus) {
+            gpsStatus.textContent = "Live GPS is not available in this browser. Showing fallback ranking.";
+        }
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const url = new URL("{{ url_for('hospitals_page') }}", window.location.origin);
+            url.searchParams.set("lat", lat);
+            url.searchParams.set("lon", lon);
+            window.location.replace(url.toString());
+        },
+        () => {
+            if (gpsStatus) {
+                gpsStatus.textContent = "Location permission denied. Showing fallback ranking without live GPS.";
+            }
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+    );
+})();
+</script>
+</html>

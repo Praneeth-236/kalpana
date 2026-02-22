@@ -20,6 +20,7 @@ from explanation_engine import (
     generate_doctor_recommendation_explanation,
     generate_hospital_explanation,
 )
+from geolocation_service import geocode_location
 from health_monitor import compute_health_stability
 from health_summary_engine import generate_patient_summary
 from models import (
@@ -57,10 +58,18 @@ from models import (
     save_answer,
 )
 from qr_generator import generate_qr
-from scoring_engine import rank_hospitals
+from scoring_engine import rank_hospitals_with_location
 
 app = Flask(__name__)
 app.secret_key = "carematch-hackathon-secret"
+
+
+def _is_patient_session():
+    return session.get("role") == "patient" and session.get("user_id") is not None
+
+
+def _is_doctor_session():
+    return session.get("role") == "doctor" and session.get("doctor_id") is not None
 
 
 def _is_local_url(value):
@@ -99,30 +108,88 @@ def _get_current_doctor():
     return get_portal_doctor(doctor_id)
 
 
-def _rank_for_user(user):
+def _to_float_or_none(value):
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _rank_for_user(user, user_lat=None, user_lon=None):
     hospitals = list_hospitals()
     doctors_by_hospital = {h["id"]: get_doctors_by_hospital(h["id"]) for h in hospitals}
-    ranked = rank_hospitals(user, hospitals, doctors_by_hospital)
+
+    hospital_coords_by_id = {}
+    for hospital in hospitals:
+        coords = geocode_location(hospital["location"])
+        if coords:
+            hospital_coords_by_id[hospital["id"]] = coords
+
+    ranked = rank_hospitals_with_location(
+        user,
+        hospitals,
+        doctors_by_hospital,
+        user_lat=user_lat,
+        user_lon=user_lon,
+        hospital_coords_by_id=hospital_coords_by_id,
+    )
     for item in ranked:
         item["explanation"] = generate_hospital_explanation(item)
     return ranked
 
 
 @app.route("/")
-def home():
-    user = _get_current_user()
-    return render_template("home.html", user=user)
+def landing_page():
+    return render_template("index.html")
+
+
+@app.route("/patient/login", methods=["GET", "POST"])
+def patient_login():
+    message = None
+
+    if request.method == "POST":
+        user_id_text = request.form.get("user_id", "").strip()
+        password = request.form.get("password", "")
+        if not user_id_text.isdigit():
+            message = "Enter a valid Patient ID."
+        elif not password:
+            message = "Password is required."
+        else:
+            user = get_user(int(user_id_text))
+            if not user:
+                message = "Patient not found. Create your profile first."
+            elif not user.get("password"):
+                message = "This profile has no password set. Create a new profile with password."
+            elif not check_password_hash(user["password"], password):
+                message = "Invalid Patient ID or password."
+            else:
+                session.pop("doctor_id", None)
+                session["user_id"] = user["id"]
+                session["role"] = "patient"
+                return redirect(url_for("patient_dashboard"))
+
+    return render_template("patient_login.html", message=message)
 
 
 @app.route("/search", methods=["GET", "POST"])
 def search():
     if request.method == "POST":
+        raw_password = request.form.get("password", "")
+        if len(raw_password) < 6:
+            return render_template(
+                "hospital_search.html",
+                message="Create a patient password with at least 6 characters.",
+            )
+
         user_id = create_user(
             name=request.form.get("name", "Anonymous User").strip() or "Anonymous User",
             age=int(request.form.get("age", 30)),
             gender=request.form.get("gender", "Not specified"),
             location=request.form.get("location", "Bengaluru"),
             condition=request.form.get("condition", "general").lower(),
+            password=generate_password_hash(raw_password),
             income_range=request.form.get("income_range", "Medium"),
             insurance_level=request.form.get("insurance_level", "Basic"),
             budget_preference=float(request.form.get("budget_preference", 3000)),
@@ -133,22 +200,40 @@ def search():
             emergency_contact_phone=request.form.get("emergency_contact_phone", "").strip(),
         )
         session["user_id"] = user_id
+        session["role"] = "patient"
+        session["new_patient_id_notice"] = user_id
         return redirect(url_for("results"))
 
-    return render_template("hospital_search.html")
+    return render_template("hospital_search.html", message=None)
 
 
 @app.route("/results")
 def results():
+    lat = request.args.get("lat")
+    lon = request.args.get("lon")
+    return redirect(url_for("hospitals_page", lat=lat, lon=lon))
+
+
+@app.route("/hospitals")
+def hospitals_page():
     user = _get_current_user()
     if not user:
         return redirect(url_for("search"))
 
-    ranked_hospitals = _rank_for_user(user)
+    user_lat = _to_float_or_none(request.args.get("lat"))
+    user_lon = _to_float_or_none(request.args.get("lon"))
+
+    ranked_hospitals = _rank_for_user(user, user_lat=user_lat, user_lon=user_lon)
+    best_hospital = ranked_hospitals[0] if ranked_hospitals else None
+    new_patient_id_notice = session.pop("new_patient_id_notice", None)
     return render_template(
-        "hospital_results.html",
+        "hospitals.html",
         user=user,
         ranked_hospitals=ranked_hospitals,
+        best_hospital=best_hospital,
+        user_lat=user_lat,
+        user_lon=user_lon,
+        new_patient_id_notice=new_patient_id_notice,
     )
 
 
@@ -196,7 +281,9 @@ def doctor_login():
         elif not check_password_hash(doctor["password"], password):
             message = "Invalid email or password."
         else:
+            session.pop("user_id", None)
             session["doctor_id"] = doctor["id"]
+            session["role"] = "doctor"
             return redirect(url_for("doctor_portal_dashboard"))
 
     return render_template("doctor_login.html", message=message)
@@ -204,6 +291,9 @@ def doctor_login():
 
 @app.route("/doctor/dashboard")
 def doctor_portal_dashboard():
+    if not _is_doctor_session():
+        return redirect(url_for("doctor_login"))
+
     doctor = _get_current_doctor()
     if not doctor:
         return redirect(url_for("doctor_login"))
@@ -390,9 +480,17 @@ def medicines():
 
 @app.route("/dashboard")
 def dashboard():
+    return redirect(url_for("patient_dashboard"))
+
+
+@app.route("/patient/dashboard")
+def patient_dashboard():
+    if not _is_patient_session():
+        return redirect(url_for("patient_login"))
+
     user = _get_current_user()
     if not user:
-        return redirect(url_for("search"))
+        return redirect(url_for("patient_login"))
 
     adherence = calculate_adherence_score(user["id"])
     medicines = get_user_medicines(user["id"])
@@ -421,7 +519,7 @@ def dashboard():
     }
 
     return render_template(
-        "dashboard.html",
+        "patient_dashboard.html",
         user=user,
         adherence=adherence,
         medicines=medicines,
@@ -433,6 +531,20 @@ def dashboard():
         adaptive_state=adaptive_state,
         adaptive_risk=adaptive_risk,
     )
+
+
+@app.route("/patient/logout")
+def patient_logout():
+    session.pop("user_id", None)
+    session.pop("role", None)
+    return redirect(url_for("patient_login"))
+
+
+@app.route("/doctor/logout")
+def doctor_logout():
+    session.pop("doctor_id", None)
+    session.pop("role", None)
+    return redirect(url_for("doctor_login"))
 
 
 @app.route("/emergency/<int:user_id>")

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CareMatch AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>CareMatch AI</h1>
+        <p class="subtitle">Choose your portal</p>
+
+        <div class="card">
+            <a class="btn" href="{{ url_for('patient_login') }}">Patient Portal</a>
+            <a class="btn" href="{{ url_for('doctor_login') }}">Doctor Portal</a>
+        </div>
+    </div>
+</body>
+</html>

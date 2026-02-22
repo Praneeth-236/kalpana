@@ -3,27 +3,27 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Doctor Login - CareMatch AI</title>
+    <title>Patient Login - CareMatch AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
     <div class="container">
-        <h1>Doctor Login</h1>
-        <p class="subtitle">Access your doctor panel.</p>
+        <h1>Patient Login</h1>
+        <p class="subtitle">Login with your Patient ID and password</p>
 
         {% if message %}
         <div class="card"><p>{{ message }}</p></div>
         {% endif %}
 
-        <form class="card" method="POST" action="{{ url_for('doctor_login') }}">
-            <label>Email</label>
-            <input type="email" name="email" required />
+        <form class="card" method="POST" action="{{ url_for('patient_login') }}">
+            <label>Patient ID</label>
+            <input type="number" name="user_id" min="1" required />
 
             <label>Password</label>
             <input type="password" name="password" required />
 
             <button class="btn" type="submit">Login</button>
-            <a class="btn" href="{{ url_for('doctor_register') }}">Register</a>
+            <a class="btn" href="{{ url_for('search') }}">Create Patient Profile</a>
             <a class="btn" href="{{ url_for('landing_page') }}">Back</a>
         </form>
     </div>

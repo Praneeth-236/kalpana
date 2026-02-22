@@ -14,7 +14,7 @@
         <div class="actions">
             <a class="btn" href="{{ url_for('search') }}">New Search</a>
             <a class="btn" href="{{ url_for('medicines') }}">Medicine Tracker</a>
-            <a class="btn" href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a class="btn" href="{{ url_for('patient_dashboard') }}">Dashboard</a>
         </div>
 
         {% for hospital in ranked_hospitals %}

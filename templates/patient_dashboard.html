@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - CareMatch AI</title>
+    <title>Patient Dashboard - CareMatch AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
     <div class="container">
-        <h1>CareMatch Dashboard</h1>
+        <h1>Patient Dashboard</h1>
         <p class="subtitle">Overview for {{ user['name'] }}</p>
 
         <div class="dashboard-actions">
@@ -18,8 +18,7 @@
             <a class="action-btn" href="{{ url_for('emergency_profile', user_id=user['id']) }}">Emergency Profile</a>
             <a class="action-btn" href="{{ url_for('generate_qr_route', user_id=user['id']) }}">Generate QR</a>
             <a class="action-btn" href="{{ url_for('connect_doctor') }}">Connect Doctor</a>
-            <a class="action-btn" href="{{ url_for('doctor_portal_dashboard') }}">Doctor Portal</a>
-            <a class="action-btn" href="{{ url_for('doctor_register') }}">Doctor Register</a>
+            <a class="action-btn" href="{{ url_for('patient_logout') }}">Logout</a>
         </div>
 
         <div class="grid-2">

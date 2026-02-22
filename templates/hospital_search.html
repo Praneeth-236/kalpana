@@ -11,6 +11,10 @@
         <h1>Hospital Search</h1>
         <p class="subtitle">Enter patient details for intelligent recommendations.</p>
 
+        {% if message %}
+        <div class="card"><p>{{ message }}</p></div>
+        {% endif %}
+
         <form class="card" method="POST" action="{{ url_for('search') }}">
             <label>Name</label>
             <input type="text" name="name" required />
@@ -26,6 +30,9 @@
 
             <label>Condition</label>
             <input type="text" name="condition" placeholder="cardiology / neurology / general" required />
+
+            <label>Create Password</label>
+            <input type="password" name="password" minlength="6" placeholder="At least 6 characters" required />
 
             <label>Income Range</label>
             <input type="text" name="income_range" placeholder="Medium" />

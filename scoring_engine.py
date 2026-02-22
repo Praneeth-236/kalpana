@@ -1,53 +1,60 @@
-from financial_engine import calculate_financial_compatibility
+from geolocation_service import distance_score_from_km, haversine_distance_km
 
 
-def _normalize_experience(doctors):
-    if not doctors:
-        return 0.0
-    max_reasonable_experience = 20
-    avg_experience = sum(d["experience_years"] for d in doctors) / len(doctors)
-    return min(1.0, avg_experience / max_reasonable_experience)
+def _calculate_distance_score(user_lat, user_lon, hospital_lat, hospital_lon):
+    if None in (user_lat, user_lon, hospital_lat, hospital_lon):
+        return 0.5
+    distance_km = haversine_distance_km(user_lat, user_lon, hospital_lat, hospital_lon)
+    return distance_score_from_km(distance_km)
 
 
-def _calculate_distance_score(user_location, hospital_location):
-    # Hackathon-friendly approximation:
-    # same city = 1.0, different city = 0.5
-    if str(user_location).strip().lower() == str(hospital_location).strip().lower():
+def _calculate_specialty_match_score(user_condition, hospital_specialization):
+    if str(user_condition).strip().lower() == str(hospital_specialization).strip().lower():
         return 1.0
-    return 0.5
+    return 0.4
 
 
-def score_hospital(user, hospital, doctors):
+def _calculate_rating_score(hospital_rating):
+    return min(1.0, max(0.0, float(hospital_rating) / 5.0))
+
+
+def _calculate_emergency_capability_score(hospital):
+    return 1.0 if int(hospital["emergency_capable"] or 0) == 1 else 0.0
+
+
+def _calculate_doctor_availability_score(doctors):
+    return 1.0 if doctors else 0.0
+
+
+def calculate_hospital_score(
+    user,
+    hospital,
+    doctors=None,
+    user_lat=None,
+    user_lon=None,
+    hospital_lat=None,
+    hospital_lon=None,
+):
     """
-    Score formula:
-
-    score =
-    0.30 specialization_match +
-    0.20 doctor_experience_score +
-    0.15 distance_score +
-    0.15 rating_score +
-    0.20 financial_compatibility
+    Multi-factor hospital score based on:
+    - distance
+    - specialty match
+    - rating
+    - emergency capability
     """
-    specialization_match = (
-        1.0
-        if str(user["condition"]).strip().lower()
-        == str(hospital["specialization"]).strip().lower()
-        else 0.4
+    distance_score = _calculate_distance_score(user_lat, user_lon, hospital_lat, hospital_lon)
+    specialty_match_score = _calculate_specialty_match_score(
+        user["condition"], hospital["specialization"]
     )
-
-    doctor_experience_score = _normalize_experience(doctors)
-    distance_score = _calculate_distance_score(user["location"], hospital["location"])
-    rating_score = min(1.0, float(hospital["rating"]) / 5.0)
-    financial_compatibility = calculate_financial_compatibility(
-        float(user["budget_preference"]), float(hospital["avg_cost"])
-    )
+    rating_score = _calculate_rating_score(hospital["rating"])
+    emergency_capability_score = _calculate_emergency_capability_score(hospital)
+    doctor_availability_score = _calculate_doctor_availability_score(doctors or [])
 
     final_score = (
-        0.30 * specialization_match
-        + 0.20 * doctor_experience_score
-        + 0.15 * distance_score
-        + 0.15 * rating_score
-        + 0.20 * financial_compatibility
+        0.30 * distance_score
+        + 0.30 * specialty_match_score
+        + 0.25 * rating_score
+        + 0.15 * emergency_capability_score
     )
 
     return {
@@ -57,21 +64,59 @@ def score_hospital(user, hospital, doctors):
         "specialization": hospital["specialization"],
         "rating": hospital["rating"],
         "avg_cost": hospital["avg_cost"],
+        "emergency_capable": int(hospital["emergency_capable"] or 0),
         "score": round(final_score, 4),
+        "score_components": {
+            "distance": round(distance_score, 4),
+            "specialization_match": round(specialty_match_score, 4),
+            "emergency_capability": round(emergency_capability_score, 4),
+            "doctor_availability": round(doctor_availability_score, 4),
+            "rating": round(rating_score, 4),
+        },
         "components": {
-            "specialization_match": round(specialization_match, 4),
-            "doctor_experience_score": round(doctor_experience_score, 4),
-            "distance_score": round(distance_score, 4),
-            "rating_score": round(rating_score, 4),
-            "financial_compatibility": round(financial_compatibility, 4),
+            "distance": round(distance_score, 4),
+            "specialization_match": round(specialty_match_score, 4),
+            "emergency_capability": round(emergency_capability_score, 4),
+            "doctor_availability": round(doctor_availability_score, 4),
+            "rating": round(rating_score, 4),
         },
     }
 
 
 def rank_hospitals(user, hospitals, doctors_by_hospital):
+    return rank_hospitals_with_location(
+        user,
+        hospitals,
+        doctors_by_hospital,
+        user_lat=None,
+        user_lon=None,
+        hospital_coords_by_id=None,
+    )
+
+
+def rank_hospitals_with_location(
+    user,
+    hospitals,
+    doctors_by_hospital,
+    user_lat,
+    user_lon,
+    hospital_coords_by_id,
+):
     ranked = []
+    hospital_coords_by_id = hospital_coords_by_id or {}
     for hospital in hospitals:
         doctors = doctors_by_hospital.get(hospital["id"], [])
-        ranked.append(score_hospital(user, hospital, doctors))
+        hospital_lat, hospital_lon = hospital_coords_by_id.get(hospital["id"], (None, None))
+        ranked.append(
+            calculate_hospital_score(
+                user,
+                hospital,
+                doctors=doctors,
+                user_lat=user_lat,
+                user_lon=user_lon,
+                hospital_lat=hospital_lat,
+                hospital_lon=hospital_lon,
+            )
+        )
     ranked.sort(key=lambda item: item["score"], reverse=True)
     return ranked

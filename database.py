@@ -23,6 +23,7 @@ def create_tables(conn):
             gender TEXT NOT NULL,
             location TEXT NOT NULL,
             condition TEXT NOT NULL,
+            password TEXT,
             income_range TEXT,
             insurance_level TEXT,
             budget_preference REAL NOT NULL,
@@ -259,7 +260,8 @@ def create_tables(conn):
 def _add_column_if_missing(conn, table_name, column_name, column_ddl):
     cursor = conn.cursor()
     cursor.execute(f"PRAGMA table_info({table_name})")
-    existing_columns = {row["name"] for row in cursor.fetchall()}
+    rows = [dict(row) for row in cursor.fetchall()]
+    existing_columns = {row["name"] for row in rows}
 
     if column_name not in existing_columns:
         cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_ddl}")
@@ -267,6 +269,7 @@ def _add_column_if_missing(conn, table_name, column_name, column_ddl):
 
 def migrate_schema(conn):
     # Safe, additive migrations only.
+    _add_column_if_missing(conn, "User", "password", "TEXT")
     _add_column_if_missing(conn, "User", "blood_group", "TEXT")
     _add_column_if_missing(conn, "User", "allergies", "TEXT")
     _add_column_if_missing(conn, "User", "medical_conditions", "TEXT")
@@ -382,7 +385,7 @@ def seed_hospitals_and_doctors(conn):
     )
 
     cursor.execute("SELECT id, specialization FROM Hospital")
-    hospital_rows = cursor.fetchall()
+    hospital_rows = [dict(row) for row in cursor.fetchall()]
 
     doctors = []
     for row in hospital_rows:

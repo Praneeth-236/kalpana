@@ -1,6 +1,16 @@
 from database import get_connection
 
 
+def _row_to_dict(row):
+    if row is None:
+        return None
+    return dict(row)
+
+
+def _rows_to_dicts(rows):
+    return [dict(row) for row in rows]
+
+
 # User model operations
 
 def create_user(
@@ -9,6 +19,7 @@ def create_user(
     gender,
     location,
     condition,
+    password,
     income_range,
     insurance_level,
     budget_preference,
@@ -28,6 +39,7 @@ def create_user(
             gender,
             location,
             condition,
+            password,
             income_range,
             insurance_level,
             budget_preference,
@@ -37,7 +49,7 @@ def create_user(
             emergency_contact_name,
             emergency_contact_phone
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             name,
@@ -45,6 +57,7 @@ def create_user(
             gender,
             location,
             condition,
+            password,
             income_range,
             insurance_level,
             budget_preference,
@@ -65,7 +78,7 @@ def get_user(user_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM User WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
+    user = _row_to_dict(cursor.fetchone())
     conn.close()
     return user
 
@@ -76,7 +89,7 @@ def list_hospitals():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM Hospital")
-    hospitals = cursor.fetchall()
+    hospitals = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return hospitals
 
@@ -91,7 +104,7 @@ def list_emergency_hospitals():
         WHERE COALESCE(emergency_capable, 0) = 1
         """
     )
-    hospitals = cursor.fetchall()
+    hospitals = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return hospitals
 
@@ -100,7 +113,7 @@ def get_hospital(hospital_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM Hospital WHERE id = ?", (hospital_id,))
-    hospital = cursor.fetchone()
+    hospital = _row_to_dict(cursor.fetchone())
     conn.close()
     return hospital
 
@@ -112,7 +125,7 @@ def get_doctors_by_hospital(hospital_id):
         "SELECT * FROM Doctor WHERE hospital_id = ? ORDER BY rating DESC, experience_years DESC",
         (hospital_id,),
     )
-    doctors = cursor.fetchall()
+    doctors = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return doctors
 
@@ -124,7 +137,7 @@ def get_doctors_for_specialization(specialization):
         "SELECT * FROM Doctor WHERE LOWER(specialization) = LOWER(?)",
         (specialization,),
     )
-    doctors = cursor.fetchall()
+    doctors = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return doctors
 
@@ -149,7 +162,7 @@ def get_user_medicines(user_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM Medicine WHERE user_id = ?", (user_id,))
-    medicines = cursor.fetchall()
+    medicines = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return medicines
 
@@ -195,7 +208,7 @@ def get_health_logs(user_id):
         "SELECT * FROM HealthLog WHERE user_id = ? ORDER BY date DESC, id DESC",
         (user_id,),
     )
-    logs = cursor.fetchall()
+    logs = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return logs
 
@@ -207,7 +220,7 @@ def get_latest_health_log(user_id):
         "SELECT * FROM HealthLog WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT 1",
         (user_id,),
     )
-    log = cursor.fetchone()
+    log = _row_to_dict(cursor.fetchone())
     conn.close()
     return log
 
@@ -218,7 +231,7 @@ def list_doctors():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM Doctor ORDER BY name ASC")
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -227,7 +240,7 @@ def get_doctor(doctor_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM Doctor WHERE id = ?", (doctor_id,))
-    row = cursor.fetchone()
+    row = _row_to_dict(cursor.fetchone())
     conn.close()
     return row
 
@@ -242,7 +255,7 @@ def get_doctor_by_email(email):
         """,
         (email,),
     )
-    row = cursor.fetchone()
+    row = _row_to_dict(cursor.fetchone())
     conn.close()
     return row
 
@@ -257,7 +270,7 @@ def get_portal_doctor(doctor_id):
         """,
         (doctor_id,),
     )
-    row = cursor.fetchone()
+    row = _row_to_dict(cursor.fetchone())
     conn.close()
     return row
 
@@ -315,7 +328,7 @@ def connect_patient_to_doctor(doctor_id, patient_id, created_at):
         """,
         (doctor_id, patient_id),
     )
-    existing = cursor.fetchone()
+    existing = _row_to_dict(cursor.fetchone())
     if existing:
         conn.close()
         return existing["id"]
@@ -346,7 +359,7 @@ def get_pending_links_for_doctor(doctor_id):
         """,
         (doctor_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -387,7 +400,7 @@ def get_approved_patients_for_doctor(doctor_id):
         """,
         (doctor_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -422,7 +435,7 @@ def get_assessment_history_for_patient(user_id, limit=30):
         """,
         (user_id, limit),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -481,7 +494,7 @@ def get_patient_prescriptions(patient_id):
         """,
         (patient_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -498,7 +511,7 @@ def get_doctor_patient_prescriptions(doctor_id, patient_id):
         """,
         (doctor_id, patient_id),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -524,7 +537,7 @@ def get_family_members(user_id):
         "SELECT * FROM FamilyMember WHERE user_id = ? ORDER BY id DESC",
         (user_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -536,7 +549,7 @@ def link_patient_doctor(user_id, doctor_id):
         "SELECT id FROM PatientDoctorLink WHERE user_id = ? AND doctor_id = ?",
         (user_id, doctor_id),
     )
-    exists = cursor.fetchone()
+    exists = _row_to_dict(cursor.fetchone())
     if not exists:
         cursor.execute(
             """
@@ -562,7 +575,7 @@ def get_linked_patients_for_doctor(doctor_id):
         """,
         (doctor_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -580,7 +593,7 @@ def get_linked_doctors_for_user(user_id):
         """,
         (user_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -619,7 +632,7 @@ def get_questionnaire(questionnaire_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM Questionnaire WHERE id = ?", (questionnaire_id,))
-    row = cursor.fetchone()
+    row = _row_to_dict(cursor.fetchone())
     conn.close()
     return row
 
@@ -637,7 +650,7 @@ def get_questionnaires_for_user(user_id):
         """,
         (user_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -649,7 +662,7 @@ def get_questions_for_questionnaire(questionnaire_id):
         "SELECT * FROM Question WHERE questionnaire_id = ? ORDER BY id ASC",
         (questionnaire_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -681,7 +694,7 @@ def get_answers_for_user(user_id):
         """,
         (user_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -699,7 +712,7 @@ def get_answer_map_for_questionnaire_user(questionnaire_id, user_id):
         """,
         (questionnaire_id, user_id),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
 
     answer_map = {}
@@ -717,7 +730,7 @@ def get_questionnaires_by_doctor(doctor_id):
         "SELECT * FROM Questionnaire WHERE doctor_id = ? ORDER BY created_at DESC, id DESC",
         (doctor_id,),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -728,7 +741,7 @@ def get_patient_state_row(user_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM PatientState WHERE user_id = ?", (user_id,))
-    row = cursor.fetchone()
+    row = _row_to_dict(cursor.fetchone())
     conn.close()
     return row
 
@@ -810,7 +823,7 @@ def list_question_bank(condition=None, category=None):
 
     query += " ORDER BY weight DESC, id ASC"
     cursor.execute(query, tuple(params))
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -819,7 +832,7 @@ def get_question_bank_item(question_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM QuestionBank WHERE id = ?", (question_id,))
-    row = cursor.fetchone()
+    row = _row_to_dict(cursor.fetchone())
     conn.close()
     return row
 
@@ -852,7 +865,7 @@ def get_recent_patient_answers(user_id, limit=20):
         """,
         (user_id, limit),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return rows
 
@@ -884,7 +897,7 @@ def get_assessment_history_questions(user_id, limit=10):
         """,
         (user_id, limit),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return [row["question"] for row in rows]
 
@@ -902,7 +915,7 @@ def get_assessment_history_entries(user_id, limit=10):
         """,
         (user_id, limit),
     )
-    rows = cursor.fetchall()
+    rows = _rows_to_dicts(cursor.fetchall())
     conn.close()
     return [
         f"Q: {row['question']} | A: {row['answer']} | At: {row['timestamp']}"
