@@ -1,6 +1,8 @@
+import os
 from datetime import datetime
 
 from flask import Flask, abort, redirect, render_template, send_file, request, session, url_for
+from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from adherence_tracker import add_medicine, calculate_adherence_score, log_medicine_taken
@@ -65,6 +67,7 @@ from qr_generator import generate_qr
 from scoring_engine import rank_hospitals_with_location
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = "carematch-hackathon-secret"
 
 
@@ -929,4 +932,5 @@ def submit_adaptive_assessment(user_id):
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
