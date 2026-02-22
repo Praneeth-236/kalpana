@@ -8,8 +8,18 @@
 </head>
 <body>
     <div class="container">
-        <h1>Patient Dashboard</h1>
-        <p class="subtitle">Overview for {{ user['name'] }}</p>
+        <section class="hero">
+            <div>
+                <h1 class="hero-title">Patient Dashboard</h1>
+                <p class="hero-copy">Overview for {{ user['name'] }} with prescriptions, adherence, health trend, and top hospital guidance in one place.</p>
+                <div class="hero-badges">
+                    <span class="badge">Health Monitoring</span>
+                    <span class="badge">Doctor Prescriptions</span>
+                    <span class="badge">Adaptive Risk Insights</span>
+                </div>
+            </div>
+            <img class="hero-image" src="{{ url_for('static', filename='images/patient-hero.svg') }}" alt="Patient dashboard illustration" />
+        </section>
 
         <div class="dashboard-actions">
             <a class="action-btn" href="{{ url_for('results') }}">Hospitals</a>

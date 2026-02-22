@@ -8,7 +8,19 @@
 </head>
 <body>
     <div class="container">
-        <h1>CareMatch AI</h1>
+        <section class="hero">
+            <div>
+                <h1 class="hero-title">CareMatch AI</h1>
+                <p class="hero-copy">Smart care guidance for patients and doctors with realtime hospital matching, adaptive risk checks, and emergency-ready profiles.</p>
+                <div class="hero-badges">
+                    <span class="badge">Realtime Hospital Match</span>
+                    <span class="badge">Patient + Doctor Portals</span>
+                    <span class="badge">Emergency QR Access</span>
+                </div>
+            </div>
+            <img class="hero-image" src="{{ url_for('static', filename='images/hero-care.svg') }}" alt="CareMatch platform illustration" />
+        </section>
+
         <p class="subtitle">Choose your portal</p>
 
         <div class="card">

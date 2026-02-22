@@ -1,0 +1,22 @@
+<svg width="800" height="520" viewBox="0 0 800 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="800" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DCEBFF"/>
+      <stop offset="1" stop-color="#EEF5FF"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="220" y1="120" x2="640" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2F6DF6"/>
+      <stop offset="1" stop-color="#1F5FE3"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="520" rx="28" fill="url(#g1)"/>
+  <circle cx="130" cy="110" r="70" fill="#FFFFFF" fill-opacity="0.5"/>
+  <circle cx="700" cy="420" r="90" fill="#FFFFFF" fill-opacity="0.45"/>
+  <rect x="180" y="110" width="440" height="300" rx="24" fill="#FFFFFF"/>
+  <rect x="216" y="146" width="368" height="228" rx="16" fill="#F7FAFF"/>
+  <path d="M356 204C356 184.67 371.67 169 391 169C410.33 169 426 184.67 426 204V216H438C457.33 216 473 231.67 473 251C473 270.33 457.33 286 438 286H422V302C422 321.33 406.33 337 387 337C367.67 337 352 321.33 352 302V286H336C316.67 286 301 270.33 301 251C301 231.67 316.67 216 336 216H352V204H356Z" fill="url(#g2)"/>
+  <rect x="92" y="352" width="182" height="22" rx="11" fill="#D3E4FF"/>
+  <rect x="92" y="384" width="138" height="22" rx="11" fill="#D3E4FF"/>
+  <rect x="526" y="130" width="182" height="22" rx="11" fill="#D3E4FF"/>
+  <rect x="560" y="162" width="148" height="22" rx="11" fill="#D3E4FF"/>
+</svg>

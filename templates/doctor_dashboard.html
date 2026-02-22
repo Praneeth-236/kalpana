@@ -8,8 +8,18 @@
 </head>
 <body>
     <div class="container">
-        <h1>Doctor Dashboard</h1>
-        <p class="subtitle">Doctor: {{ doctor['name'] }} ({{ doctor['specialization'] }})</p>
+        <section class="hero">
+            <div>
+                <h1 class="hero-title">Doctor Dashboard</h1>
+                <p class="hero-copy">Doctor: {{ doctor['name'] }} ({{ doctor['specialization'] }}) — manage linked patients, approvals, prescriptions, and progress from a single professional workspace.</p>
+                <div class="hero-badges">
+                    <span class="badge">Patient Management</span>
+                    <span class="badge">Prescription Workflow</span>
+                    <span class="badge">Clinical Summaries</span>
+                </div>
+            </div>
+            <img class="hero-image" src="{{ url_for('static', filename='images/doctor-hero.svg') }}" alt="Doctor dashboard illustration" />
+        </section>
 
         {% if portal_mode %}
         <div class="actions">
