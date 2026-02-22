@@ -3,70 +3,75 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LifeLink Emergency Profile</title>
+    <title>Emergency Profile - CareMatch AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
-    <style>
-        .emergency-title {
-            font-size: 34px;
-            color: #b91c1c;
-            margin-bottom: 8px;
-        }
-        .emergency-sub {
-            font-size: 18px;
-            margin-bottom: 16px;
-        }
-        .big-text {
-            font-size: 20px;
-            line-height: 1.5;
-        }
-        .call-btn {
-            display: inline-block;
-            background: #b91c1c;
-            color: #fff;
-            font-size: 18px;
-            padding: 12px 18px;
-            border-radius: 8px;
-            text-decoration: none;
-            margin-top: 12px;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <div class="card">
-            <h1 class="emergency-title">PATIENT EMERGENCY INFO</h1>
-            <p class="emergency-sub">LifeLink Emergency QR System</p>
+        <h1>Emergency Medical Profile</h1>
+        <p class="subtitle">Live data fetched in real time from CareMatch database</p>
 
-            <div class="big-text">
-                <p><strong>Name:</strong> {{ user['name'] }}</p>
-                <p><strong>Blood Group:</strong> {{ user['blood_group'] or 'Not Provided' }}</p>
-                <p><strong>Medical Conditions:</strong> {{ user['medical_conditions'] or user['condition'] or 'Not Provided' }}</p>
-                <p><strong>Allergies:</strong> {{ user['allergies'] or 'Not Provided' }}</p>
-            </div>
+        <div class="card">
+            <h2>Patient Name</h2>
+            <p>{{ user['name'] }}</p>
+            <h2>Condition</h2>
+            <p>{{ user['medical_conditions'] or user['condition'] or 'Not Provided' }}</p>
+            <h2>Blood Group</h2>
+            <p>{{ user['blood_group'] or 'Not Provided' }}</p>
+            <h2>Allergies</h2>
+            <p>{{ user['allergies'] or 'Not Provided' }}</p>
         </div>
 
         <div class="card">
-            <h2>Emergency Contact</h2>
-            <div class="big-text">
-                <p><strong>Name:</strong> {{ user['emergency_contact_name'] or 'Not Provided' }}</p>
-                <p><strong>Phone:</strong> {{ user['emergency_contact_phone'] or 'Not Provided' }}</p>
-                {% if user['emergency_contact_phone'] %}
-                <a class="btn" href="tel:{{ user['emergency_contact_phone'] }}">Call Family Contact</a>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Recommended Hospital</h2>
-            {% if hospital %}
-            <div class="big-text">
-                <p><strong>Hospital Name:</strong> {{ hospital['name'] }}</p>
-                <p><strong>Location:</strong> {{ hospital['location'] }}</p>
-                <p><strong>Ambulance Number:</strong> {{ hospital['ambulance_number'] }}</p>
-                <a class="call-btn" href="{{ url_for('call_ambulance', hospital_id=hospital['hospital_id']) }}">Call Ambulance</a>
-            </div>
+            <h2>Medications</h2>
+            {% for item in prescriptions %}
+            <p><strong>{{ item['medicine_name'] }}</strong> — {{ item['dosage'] }}, {{ item['frequency'] }}</p>
+            <p>Instructions: {{ item['instructions'] or 'N/A' }}</p>
+            <p>Prescribed by: {{ item['doctor_name'] or 'Doctor' }}</p>
+            <hr />
             {% else %}
-            <p>No emergency-capable hospital found.</p>
+            <p>No active prescriptions recorded.</p>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <h2>Emergency Contacts</h2>
+            {% for contact in emergency_contacts %}
+            <p><strong>{{ contact['name'] }}</strong> ({{ contact['relationship'] or 'Contact' }})</p>
+            <p>{{ contact['contact'] }}</p>
+            {% if contact['contact'] and contact['contact'] != 'Not Provided' %}
+            <a class="btn" href="tel:{{ contact['contact'] }}">Call</a>
+            {% endif %}
+            <hr />
+            {% else %}
+            <p>No emergency contacts available.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Latest Health Summary</h2>
+            {% set state = health_summary['state'] %}
+            {% set latest = health_summary['latest_assessment'] %}
+            {% if state %}
+            <p><strong>Trend:</strong> {{ state['trend'] or 'N/A' }}</p>
+            <p><strong>Stress Score:</strong> {{ state['stress_score'] if state['stress_score'] is not none else 'N/A' }}</p>
+            <p><strong>Energy Score:</strong> {{ state['energy_score'] if state['energy_score'] is not none else 'N/A' }}</p>
+            <p><strong>Recommendation:</strong> {{ state['recommendation'] or 'N/A' }}</p>
+            <p><strong>Last Updated:</strong> {{ state['last_updated'] or 'N/A' }}</p>
+            {% else %}
+            <p>No adaptive health summary available.</p>
+            {% endif %}
+
+            {% if latest %}
+            <p><strong>Latest Assessment Entry:</strong> {{ latest['question'] }} → {{ latest['answer'] }} ({{ latest['timestamp'] }})</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Risk Level</h2>
+            <p><strong>{{ risk_level }}</strong></p>
+            {% if health_summary['state'] and health_summary['state']['risk_reason'] %}
+            <p>{{ health_summary['state']['risk_reason'] }}</p>
             {% endif %}
         </div>
     </div>

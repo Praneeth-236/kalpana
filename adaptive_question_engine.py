@@ -202,52 +202,17 @@ def get_question_history(user_id, limit=10):
     return get_assessment_history_questions(user_id, limit=limit)
 
 
-def get_condition_fallback_questions(condition):
-    normalized = (condition or "general").strip().lower()
-
-    condition_map = {
-        "neurology": [
-            "Have your headaches become more intense or frequent today?",
-            "Did you experience more difficulty concentrating compared to yesterday?",
-            "Have you noticed worsening balance or coordination today?",
-        ],
-        "cardiology": [
-            "Did stress or mild exertion trigger chest discomfort today?",
-            "Did you feel more breathlessness than your usual baseline today?",
-            "Did tiredness or palpitations limit your routine activity today?",
-        ],
-        "diabetes": [
-            "Did you experience sudden weakness or unusual fatigue today?",
-            "Did stress episodes coincide with dizziness or shakiness today?",
-            "Was your energy less stable than yesterday across the day?",
-        ],
-        "oncology": [
-            "Did treatment-related fatigue feel stronger than yesterday?",
-            "Did you experience increased pain or discomfort during routine tasks today?",
-            "Did stress make symptom management harder today?",
-        ],
-        "orthopedics": [
-            "Did movement-related pain increase compared to yesterday?",
-            "Did joint or muscle stiffness reduce your mobility today?",
-            "Did physical fatigue appear earlier than usual during activity today?",
-        ],
-        "general": [
-            "Have symptoms worsened today?",
-            "How is your energy level compared to yesterday?",
-            "Do you feel more or less stressed today?",
-        ],
-    }
-
-    return condition_map.get(normalized, condition_map["general"])
+def get_fallback_questions():
+    return [
+        "Have symptoms worsened today?",
+        "How is your energy level compared to yesterday?",
+        "Do you feel more or less stressed today?",
+    ]
 
 
-def get_fallback_questions(condition="general"):
-    return get_condition_fallback_questions(condition)
-
-
-def _normalize_fallback_monitoring_questions(condition="general"):
+def _normalize_fallback_monitoring_questions():
     normalized = []
-    for idx, question_text in enumerate(get_condition_fallback_questions(condition), start=1):
+    for idx, question_text in enumerate(get_fallback_questions(), start=1):
         normalized.append(
             {
                 "id": f"fallback_{idx}",
@@ -275,10 +240,6 @@ def get_db_fallback_questions(user_id, history=None):
 
     user = get_user(user_id)
     condition = (user["condition"] or "general").strip().lower() if user else "general"
-
-    if condition == "neurology":
-        return _normalize_fallback_monitoring_questions(condition="neurology")
-
     extra_pool = list_question_bank(condition=condition) + list_question_bank(condition="general")
 
     used = {q["question_text"].strip().lower() for q in filtered}
@@ -299,15 +260,13 @@ def get_db_fallback_questions(user_id, history=None):
         if len(filtered) >= 5:
             break
 
-    return filtered if filtered else _normalize_fallback_monitoring_questions(condition=condition)
+    return filtered if filtered else _normalize_fallback_monitoring_questions()
 
 
 def get_adaptive_questions(user_id):
     user = get_user(user_id)
-    condition = (user["condition"] or "general").strip().lower() if user else "general"
-
     if not user:
-        return _normalize_fallback_monitoring_questions(condition=condition)
+        return _normalize_fallback_monitoring_questions()
 
     if not is_assessment_due(user_id):
         return "Next assessment available tomorrow"
@@ -352,7 +311,7 @@ def get_adaptive_questions(user_id):
     if db_fallback:
         return db_fallback
 
-    return _normalize_fallback_monitoring_questions(condition=condition)
+    return _normalize_fallback_monitoring_questions()
 
 
 def update_patient_state(user_id, answers, question_context=None):

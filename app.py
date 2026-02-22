@@ -20,7 +20,7 @@ from explanation_engine import (
     generate_doctor_recommendation_explanation,
     generate_hospital_explanation,
 )
-from geolocation_service import geocode_location
+from geolocation_service import fetch_nearest_hospitals_overpass, geocode_location
 from health_monitor import compute_health_stability
 from health_summary_engine import generate_patient_summary
 from models import (
@@ -38,8 +38,11 @@ from models import (
     get_doctor,
     get_doctor_by_email,
     get_doctors_by_hospital,
+    get_emergency_contacts,
     get_health_logs,
+    get_health_summary,
     get_hospital,
+    get_prescriptions,
     get_linked_patients_for_doctor,
     get_latest_health_log,
     get_questionnaire,
@@ -118,14 +121,31 @@ def _to_float_or_none(value):
 
 
 def _rank_for_user(user, user_lat=None, user_lon=None):
-    hospitals = list_hospitals()
-    doctors_by_hospital = {h["id"]: get_doctors_by_hospital(h["id"]) for h in hospitals}
+    use_overpass = user_lat is not None and user_lon is not None
 
+    hospitals = []
+    doctors_by_hospital = {}
     hospital_coords_by_id = {}
-    for hospital in hospitals:
-        coords = geocode_location(hospital["location"])
-        if coords:
-            hospital_coords_by_id[hospital["id"]] = coords
+
+    if use_overpass:
+        hospitals = fetch_nearest_hospitals_overpass(
+            user_lat,
+            user_lon,
+            preferred_condition=user.get("condition"),
+        )
+        for hospital in hospitals:
+            hospital_coords_by_id[hospital["id"]] = (
+                hospital["latitude"],
+                hospital["longitude"],
+            )
+
+    if not hospitals:
+        hospitals = list_hospitals()
+        doctors_by_hospital = {h["id"]: get_doctors_by_hospital(h["id"]) for h in hospitals}
+        for hospital in hospitals:
+            coords = geocode_location(hospital["location"])
+            if coords:
+                hospital_coords_by_id[hospital["id"]] = coords
 
     ranked = rank_hospitals_with_location(
         user,
@@ -553,11 +573,18 @@ def emergency_profile(user_id):
     if not user:
         abort(404)
 
-    best_hospital = recommend_emergency_hospital(user["location"])
+    prescriptions = get_prescriptions(user_id)
+    health_summary = get_health_summary(user_id)
+    emergency_contacts = get_emergency_contacts(user_id)
+    patient_state = health_summary.get("state") or {}
+
     return render_template(
         "emergency_profile.html",
         user=user,
-        hospital=best_hospital,
+        prescriptions=prescriptions,
+        health_summary=health_summary,
+        emergency_contacts=emergency_contacts,
+        risk_level=patient_state.get("risk_level") or "Unknown",
     )
 
 

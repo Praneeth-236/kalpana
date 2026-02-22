@@ -36,9 +36,15 @@
             <p><strong>{{ best_hospital['hospital_name'] }}</strong></p>
             <p><strong>Score:</strong> {{ (best_hospital['score'] * 100) | round(2) }}%</p>
             <p><strong>Location:</strong> {{ best_hospital['location'] }}</p>
-            <p><strong>Specialization:</strong> {{ best_hospital['specialization'] }}</p>
+            {% if best_hospital['distance_km'] is not none %}
+            <p><strong>Distance:</strong> {{ best_hospital['distance_km'] }} km</p>
+            {% endif %}
+            <p><strong>Specialization:</strong> {{ best_hospital.get('specialization_display') or best_hospital['specialization'] }}</p>
             <p><strong>Rating:</strong> {{ best_hospital['rating'] }} / 5</p>
             <p><strong>Emergency Capability:</strong> {{ 'Yes' if best_hospital['emergency_capable'] else 'No' }}</p>
+            {% if best_hospital['source'] == 'overpass' %}
+            <p><strong>Source:</strong> Overpass API nearest hospitals</p>
+            {% endif %}
             <pre class="explanation">{{ best_hospital['explanation'] }}</pre>
             {% else %}
             <p>No hospital recommendation available.</p>
@@ -49,12 +55,20 @@
         <div class="card">
             <h2>#{{ loop.index }} {{ hospital['hospital_name'] }}</h2>
             <p><strong>Location:</strong> {{ hospital['location'] }}</p>
-            <p><strong>Specialization:</strong> {{ hospital['specialization'] }}</p>
+            {% if hospital['distance_km'] is not none %}
+            <p><strong>Distance:</strong> {{ hospital['distance_km'] }} km</p>
+            {% endif %}
+            <p><strong>Specialization:</strong> {{ hospital.get('specialization_display') or hospital['specialization'] }}</p>
             <p><strong>Rating:</strong> {{ hospital['rating'] }} / 5</p>
             <p><strong>Emergency Capability:</strong> {{ 'Yes' if hospital['emergency_capable'] else 'No' }}</p>
             <p><strong>Composite Score:</strong> {{ (hospital['score'] * 100) | round(2) }}%</p>
             <pre class="explanation">{{ hospital['explanation'] }}</pre>
+            {% if hospital['source'] == 'overpass' %}
+            <p><strong>Source:</strong> Overpass API nearest hospitals</p>
+            {% endif %}
+            {% if hospital['source'] != 'overpass' %}
             <a class="btn" href="{{ url_for('doctors', hospital_id=hospital['hospital_id']) }}">View Doctors</a>
+            {% endif %}
         </div>
         {% endfor %}
     </div>

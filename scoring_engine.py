@@ -43,6 +43,9 @@ def calculate_hospital_score(
     - emergency capability
     """
     distance_score = _calculate_distance_score(user_lat, user_lon, hospital_lat, hospital_lon)
+    distance_km = None
+    if None not in (user_lat, user_lon, hospital_lat, hospital_lon):
+        distance_km = haversine_distance_km(user_lat, user_lon, hospital_lat, hospital_lon)
     specialty_match_score = _calculate_specialty_match_score(
         user["condition"], hospital["specialization"]
     )
@@ -65,6 +68,8 @@ def calculate_hospital_score(
         "rating": hospital["rating"],
         "avg_cost": hospital["avg_cost"],
         "emergency_capable": int(hospital["emergency_capable"] or 0),
+        "source": hospital.get("source", "database"),
+        "distance_km": round(distance_km, 2) if distance_km is not None else hospital.get("distance_km"),
         "score": round(final_score, 4),
         "score_components": {
             "distance": round(distance_score, 4),

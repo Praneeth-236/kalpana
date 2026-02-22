@@ -1,4 +1,5 @@
 import os
+import re
 
 from google import genai
 
@@ -67,39 +68,76 @@ def get_condition_fallback_questions(condition):
     return condition_map.get(normalized, condition_map["general"])
 
 
-def generate_adaptive_questions(
-    condition,
-    stress_score,
-    energy_score,
-    trend,
-    adherence_score,
-    history,
-):
-    history_text = "\n".join(history) if history else "None"
+def _format_list_for_prompt(items, default="None"):
+    if not items:
+        return default
+    return "\n".join(f"- {str(item).strip()}" for item in items if str(item).strip()) or default
+
+
+def _parse_question_lines(text):
+    questions = []
+    for raw_line in (text or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        line = re.sub(r"^\s*(?:\d+[\.)]|[-*])\s*", "", line).strip()
+        line = line.strip('"').strip()
+        if line:
+            questions.append(line)
+    return questions
+
+
+def generate_adaptive_questions(patient_data):
+    condition = (patient_data.get("condition") or "general").strip().lower()
+    stress_score = patient_data.get("stress_score")
+    energy_score = patient_data.get("energy_score")
+    adherence_score = patient_data.get("adherence_score")
+    trend = patient_data.get("trend")
+    risk_level = patient_data.get("risk_level")
+    medication_list = patient_data.get("medication_list") or []
+    adherence_history = patient_data.get("adherence_history") or []
+    assessment_history = patient_data.get("assessment_history") or []
+    health_summary = patient_data.get("health_summary") or "Not available"
+    question_history = patient_data.get("question_history") or []
+
     condition_instruction = _condition_instruction(condition)
 
     prompt = f"""
-You are an advanced clinical assessment AI.
+You are an advanced clinical assessment AI for chronic-condition monitoring.
 
-Patient condition: {condition}
-Stress score: {stress_score}
-Energy score: {energy_score}
+FULL PATIENT CLINICAL CONTEXT
+Condition: {condition}
+Stress score (0-100): {stress_score}
+Energy score (0-100): {energy_score}
+Adherence score (0-100): {adherence_score}
 Trend: {trend}
-Adherence score: {adherence_score}
+Risk level: {risk_level}
 
-Previously asked questions:
-{history_text}
+Medication list:
+{_format_list_for_prompt(medication_list)}
+
+Adherence history:
+{_format_list_for_prompt(adherence_history)}
+
+Assessment history:
+{_format_list_for_prompt(assessment_history)}
+
+Health summary:
+{health_summary}
+
+Previously asked questions (DO NOT REPEAT):
+{_format_list_for_prompt(question_history)}
 
 {condition_instruction}
 
-Generate exactly 3 NEW clinically relevant adaptive questions.
+TASK:
+Generate exactly 3 personalized, condition-specific adaptive questions for the next daily check-in.
 
 STRICT RULES:
-- DO NOT repeat any previously asked questions
-- Questions must be specific to condition and current declining areas
-- Focus on stress, fatigue, neurological, or physical deterioration
-- Each question must be unique
-- Each question must be on a new line
+- Output exactly 3 lines, each line one question.
+- No numbering, no bullets, no extra explanation.
+- Do NOT repeat previous questions.
+- Make questions clinically meaningful and tailored to this patient's condition + current risk/trend.
 """
 
     try:
@@ -114,13 +152,14 @@ STRICT RULES:
         )
 
         text = (response.text or "").strip()
-        history_set = {h.strip().lower() for h in (history or []) if h and h.strip()}
+        history_set = {
+            str(h).strip().lower()
+            for h in question_history
+            if h and str(h).strip()
+        }
 
         cleaned = []
-        for line in text.split("\n"):
-            question = line.strip("- ").strip()
-            if not question:
-                continue
+        for question in _parse_question_lines(text):
             normalized = question.lower()
             if normalized in history_set:
                 continue
@@ -128,10 +167,19 @@ STRICT RULES:
                 continue
             cleaned.append(question)
 
-        final_questions = cleaned[:3]
-        if not final_questions:
-            return get_condition_fallback_questions(condition)
+        fallback_questions = get_condition_fallback_questions(condition)
+        fallback_iter = [
+            q for q in fallback_questions if q.strip().lower() not in history_set
+        ]
+        for fallback_question in fallback_iter:
+            if len(cleaned) >= 3:
+                break
+            if fallback_question.lower() not in {q.lower() for q in cleaned}:
+                cleaned.append(fallback_question)
 
-        return final_questions
+        while len(cleaned) < 3:
+            cleaned.append(get_condition_fallback_questions(condition)[len(cleaned) % 3])
+
+        return cleaned[:3]
     except Exception:
-        return get_condition_fallback_questions(condition)
+        return get_condition_fallback_questions(condition)[:3]

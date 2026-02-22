@@ -499,6 +499,93 @@ def get_patient_prescriptions(patient_id):
     return rows
 
 
+def get_prescriptions(user_id):
+    return get_patient_prescriptions(user_id)
+
+
+def get_health_summary(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            risk_level,
+            risk_probability,
+            risk_reason,
+            recommendation,
+            stress_score,
+            energy_score,
+            trend,
+            last_assessment_at,
+            last_updated
+        FROM PatientState
+        WHERE user_id = ?
+        """,
+        (user_id,),
+    )
+    state = _row_to_dict(cursor.fetchone())
+
+    cursor.execute(
+        """
+        SELECT question, answer, timestamp
+        FROM AssessmentHistory
+        WHERE user_id = ?
+        ORDER BY timestamp DESC, id DESC
+        LIMIT 1
+        """,
+        (user_id,),
+    )
+    latest_assessment = _row_to_dict(cursor.fetchone())
+
+    conn.close()
+
+    return {
+        "state": state,
+        "latest_assessment": latest_assessment,
+    }
+
+
+def get_emergency_contacts(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT emergency_contact_name, emergency_contact_phone
+        FROM User
+        WHERE id = ?
+        """,
+        (user_id,),
+    )
+    primary = _row_to_dict(cursor.fetchone())
+
+    contacts = []
+    if primary and (primary.get("emergency_contact_name") or primary.get("emergency_contact_phone")):
+        contacts.append(
+            {
+                "name": primary.get("emergency_contact_name") or "Primary Contact",
+                "contact": primary.get("emergency_contact_phone") or "Not Provided",
+                "relationship": "Primary",
+            }
+        )
+
+    cursor.execute(
+        """
+        SELECT name, relationship, contact
+        FROM FamilyMember
+        WHERE user_id = ?
+        ORDER BY id DESC
+        """,
+        (user_id,),
+    )
+    family_rows = _rows_to_dicts(cursor.fetchall())
+    contacts.extend(family_rows)
+
+    conn.close()
+    return contacts
+
+
 def get_doctor_patient_prescriptions(doctor_id, patient_id):
     conn = get_connection()
     cursor = conn.cursor()
