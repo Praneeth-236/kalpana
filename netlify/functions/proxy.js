@@ -1,14 +1,7 @@
 exports.handler = async (event) => {
-  const backendUrl = process.env.BACKEND_URL;
+  const BACKEND_URL = process.env.BACKEND_URL || "https://kalpana-4x49.onrender.com";
 
-  if (!backendUrl) {
-    return {
-      statusCode: 500,
-      body: "Missing BACKEND_URL environment variable on Netlify.",
-    };
-  }
-
-  const backendBase = backendUrl.replace(/\/$/, "");
+  const backendBase = BACKEND_URL.replace(/\/$/, "");
   const proxiedPath = (event.path || "").replace(/^\/\.netlify\/functions\/proxy/, "") || "/";
   const queryString = event.rawQuery ? `?${event.rawQuery}` : "";
   const targetUrl = `${backendBase}${proxiedPath}${queryString}`;
